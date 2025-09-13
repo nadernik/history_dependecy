@@ -351,11 +351,16 @@ class SerialDependenceAnalyzer:
             df_lag = self.df.copy()
             df_lag = df_lag.sort_values(['rat', 'date', 'trial_number'])
             
+            # Add perceptual difficulty feature (distance from category boundary at 45°)
+            df_lag['difficulty'] = np.abs(df_lag['angle'] - 45.0)
+            print(f"Added perceptual difficulty feature (distance from 45°)")
+            print(f"Difficulty range: {df_lag['difficulty'].min():.1f}° - {df_lag['difficulty'].max():.1f}°")
+            
             # Create lagged features
             for i in range(1, self.k + 1):
                 print(f"Creating lag {i} features...")
                 
-                lag_columns = ['action', 'angle', 'hitmiss', 'mod']
+                lag_columns = ['action', 'angle', 'hitmiss', 'mod', 'difficulty']
                 
                 for col in lag_columns:
                     new_col = f"{col}_n-{i}"
@@ -422,6 +427,11 @@ class SerialDependenceAnalyzer:
                 
                 features.append(self.df_processed[f'hitmiss_n-{i}'].values)
                 feature_names.append(f'hitmiss_n-{i}')
+                
+                # Add difficulty features if available
+                if f'difficulty_n-{i}' in self.df_processed.columns:
+                    features.append(self.df_processed[f'difficulty_n-{i}'].values)
+                    feature_names.append(f'difficulty_n-{i}')
             
             # Stack features
             X = np.column_stack(features)
@@ -497,6 +507,9 @@ class SerialDependenceAnalyzer:
                 elif 'hitmiss_n-' in feature:
                     lag = int(feature.split('hitmiss_n-')[1])
                     history_effects.append(('hitmiss', lag, feature, coeff))
+                elif 'difficulty_n-' in feature:
+                    lag = int(feature.split('difficulty_n-')[1])
+                    history_effects.append(('difficulty', lag, feature, coeff))
         
         # Always include the most significant hit/miss effects (even if below threshold)
         hitmiss_effects = []
@@ -513,6 +526,22 @@ class SerialDependenceAnalyzer:
             if not any(e[1] == lag and e[0] == 'hitmiss' for e in existing_hitmiss):
                 history_effects.append((effect_type, lag, feature, coeff))
                 print(f"  Added top hit/miss effect: {feature}: β={coeff:.4f}")
+        
+        # Always include the most significant difficulty effects (even if below threshold)
+        difficulty_effects = []
+        for feature, coeff in zip(self.feature_names, coefficients):
+            if 'difficulty_n-' in feature and any(f"n-{i}" in feature for i in range(1, self.k + 1)):
+                lag = int(feature.split('difficulty_n-')[1])
+                difficulty_effects.append((abs(coeff), 'difficulty', lag, feature, coeff))
+        
+        # Add top 2 difficulty effects if not already included
+        difficulty_effects.sort(reverse=True)  # Sort by absolute coefficient
+        existing_difficulty = [effect for effect in history_effects if effect[0] == 'difficulty']
+        
+        for _, effect_type, lag, feature, coeff in difficulty_effects[:2]:
+            if not any(e[1] == lag and e[0] == 'difficulty' for e in existing_difficulty):
+                history_effects.append((effect_type, lag, feature, coeff))
+                print(f"  Added top difficulty effect: {feature}: β={coeff:.4f}")
         
         # Sort all effects by absolute coefficient value
         history_effects.sort(key=lambda x: abs(x[3]), reverse=True)
@@ -542,7 +571,7 @@ class SerialDependenceAnalyzer:
         n_rows = (n_plots + n_cols - 1) // n_cols
         
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4*n_rows))
-        fig.suptitle('Serial Dependence Effects: How Past Trials Influence Current Decisions\n(Choices, Stimuli, and Outcomes)', 
+        fig.suptitle('Serial Dependence Effects: How Past Trials Influence Current Decisions\n(Choices, Stimuli, Outcomes, and Difficulty)', 
                     fontsize=16, fontweight='bold', y=0.98)
         
         if n_plots == 1:
@@ -566,6 +595,10 @@ class SerialDependenceAnalyzer:
             elif effect_type == 'hitmiss':
                 self._plot_hitmiss_effect(ax, lag)
                 ax.set_title(f'Outcome Serial Dependence (n-{lag})\nHow success/failure {lag} trials ago bias current choice\nβ={coeff:.3f}', 
+                           fontsize=11)
+            elif effect_type == 'difficulty':
+                self._plot_difficulty_effect(ax, lag)
+                ax.set_title(f'Difficulty Serial Dependence (n-{lag})\nHow past trial difficulty {lag} trials ago affects current choice\nβ={coeff:.3f}', 
                            fontsize=11)
             
             ax.set_xlabel('Current Stimulus Angle (degrees)')
@@ -638,6 +671,70 @@ class SerialDependenceAnalyzer:
         ax.set_xlabel('Stimulus Angle (degrees)')
         ax.set_ylabel('P(Turn Right)')
         ax.set_title(f'Previous Outcome Effect (n-{lag})')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+    def _plot_difficulty_effect(self, ax, lag, angle_bins=None, angle_centers=None):
+        """Plot previous difficulty effect with cumulative Gaussian fits"""
+        difficulty_col = f'difficulty_n-{lag}'
+        
+        # Get data
+        angles = self.df_processed['angle'].values
+        responses = self.df_processed['action'].values
+        past_difficulties = self.df_processed[difficulty_col].values
+        
+        # Overall baseline curve
+        params, success, x_fit, y_fit = fit_psychometric_curve(angles, responses, min_trials=10)
+        if success:
+            ax.plot(x_fit, y_fit, 'k--', alpha=0.7, linewidth=2, label='Overall')
+        
+        # Define difficulty bins (easy vs hard based on distance from 45°)
+        difficulty_threshold = np.median(past_difficulties)  # Use median as threshold
+        
+        # Plot for different difficulty levels
+        colors = ['purple', 'orange']  # Purple for hard, orange for easy
+        labels = [f'Prev: Hard (≤{difficulty_threshold:.1f}°)', f'Prev: Easy (>{difficulty_threshold:.1f}°)']
+        
+        for difficulty_level, (color, label) in enumerate(zip(colors, labels)):
+            if difficulty_level == 0:  # Hard trials (closer to 45°, smaller distance)
+                mask = past_difficulties <= difficulty_threshold
+            else:  # Easy trials (farther from 45°, larger distance)
+                mask = past_difficulties > difficulty_threshold
+                
+            if mask.sum() < 20:  # Need sufficient data
+                continue
+                
+            angles_filtered = angles[mask]
+            responses_filtered = responses[mask]
+            
+            # Fit curve for this difficulty level
+            params, success, x_fit, y_fit = fit_psychometric_curve(
+                angles_filtered, responses_filtered, min_trials=5)
+            
+            if success:
+                ax.plot(x_fit, y_fit, color=color, 
+                       linewidth=2, label=label)
+            else:
+                # Fallback: calculate binned performance
+                unique_angles = np.unique(angles_filtered)
+                performance = []
+                plot_angles = []
+                
+                for angle in unique_angles:
+                    angle_mask = angles_filtered == angle
+                    if angle_mask.sum() >= 5:
+                        perf = np.mean(responses_filtered[angle_mask])
+                        performance.append(perf)
+                        plot_angles.append(angle)
+                
+                if len(plot_angles) > 0:
+                    ax.plot(plot_angles, performance, 'o-', 
+                           color=color, linewidth=2, 
+                           markersize=4, label=label)
+        
+        ax.set_xlabel('Stimulus Angle (degrees)')
+        ax.set_ylabel('P(Turn Right)')
+        ax.set_title(f'Previous Difficulty Effect (n-{lag})\nHow past trial difficulty affects current choice')
         ax.legend()
         ax.grid(True, alpha=0.3)
 
@@ -790,6 +887,11 @@ class SerialDependenceAnalyzer:
                     
                     features.append(rat_data[f'hitmiss_n-{i}'].values)
                     feature_names.append(f'hitmiss_n-{i}')
+                    
+                    # Add difficulty features if available
+                    if f'difficulty_n-{i}' in rat_data.columns:
+                        features.append(rat_data[f'difficulty_n-{i}'].values)
+                        feature_names.append(f'difficulty_n-{i}')
                 
                 # Stack features
                 X = np.column_stack(features)
@@ -1441,7 +1543,7 @@ class SerialDependenceAnalyzer:
         return fig
     
     def plot_modality_psychometric_comparison(self, modality_history_results=None):
-        """Plot psychometric curves showing modality-specific history effects"""
+        """Plot psychometric curves showing modality-specific history effects for all available lags"""
         if modality_history_results is None:
             modality_history_results = self.analyze_modality_specific_history_effects()
         
@@ -1449,14 +1551,31 @@ class SerialDependenceAnalyzer:
             print("No modality-specific results to plot")
             return None
         
-        # Create figure for psychometric curves
+        # Determine the maximum number of lags across all modalities
+        max_lags = 0
+        all_lags = set()
+        for mod_results in modality_history_results.values():
+            lags_available = [int(key.split('-')[1]) for key in mod_results['lags'].keys()]
+            max_lags = max(max_lags, len(lags_available))
+            all_lags.update(lags_available)
+        
+        # Sort lags for consistent ordering
+        sorted_lags = sorted(all_lags)
+        n_lags = len(sorted_lags)
         n_modalities = len(modality_history_results)
-        fig, axes = plt.subplots(2, n_modalities, figsize=(6*n_modalities, 10))
-        fig.suptitle('Modality-Specific Psychometric Curves with Serial Dependence\n(Previous Choice Effects on Current Performance)', 
+        
+        # Create figure for psychometric curves - dynamic grid based on available lags
+        fig, axes = plt.subplots(n_lags, n_modalities, figsize=(6*n_modalities, 5*n_lags))
+        fig.suptitle(f'Modality-Specific Psychometric Curves with Serial Dependence\n(All n-k Choice Effects: n-{sorted_lags[0]} through n-{sorted_lags[-1]})', 
                     fontsize=16, fontweight='bold')
         
-        if n_modalities == 1:
-            axes = axes.reshape(-1, 1)
+        # Handle different subplot configurations
+        if n_lags == 1 and n_modalities == 1:
+            axes = [[axes]]
+        elif n_lags == 1:
+            axes = [axes]
+        elif n_modalities == 1:
+            axes = [[ax] for ax in axes]
         
         # Define modality colors: [[0, 2/3, 0], [0, 0.4470, 0.7410], [1, 0, 0], [0, 0, 0]]
         modality_colors = {'Touch (T)': [0, 2/3, 0], 'Vision (V)': [0, 0.4470, 0.7410], 'Visual-Tactile (VT)': [1, 0, 0]}
@@ -1465,9 +1584,9 @@ class SerialDependenceAnalyzer:
             mod_name = mod_results['name']
             color = modality_colors.get(mod_name, 'black')
             
-            # Plot for n-1 and n-2 effects (most common)
-            for row, lag in enumerate([1, 2]):
-                ax = axes[row, idx]
+            # Plot for all available lags
+            for row, lag in enumerate(sorted_lags):
+                ax = axes[row][idx]
                 lag_key = f'n-{lag}'
                 
                 if lag_key in mod_results['lags']:
@@ -1500,15 +1619,32 @@ class SerialDependenceAnalyzer:
                         if success:
                             ax.plot(x_fit, y_fit, color=prev_colors[prev_action], linewidth=2,
                                    label=f'{prev_labels[prev_action]} (μ={params[0]:.1f}°)')
+                    
+                    # Set title with β coefficient
+                    choice_effect = mod_results["lags"].get(lag_key, {}).get("choice_effect", 0)
+                    ax.set_title(f'{mod_name}: n-{lag} Effect\nβ={choice_effect:.3f}', 
+                               fontweight='bold')
+                    ax.legend(fontsize=8)
+                else:
+                    # No data for this lag - show empty plot with message
+                    ax.text(0.5, 0.5, f'No n-{lag} data\nfor {mod_name}', 
+                           ha='center', va='center', transform=ax.transAxes,
+                           fontsize=12, style='italic', color='gray')
+                    ax.set_title(f'{mod_name}: n-{lag} Effect\n(No data)', 
+                               fontweight='bold', color='gray')
                 
-                ax.set_title(f'{mod_name}: n-{lag} Effect\nβ={mod_results["lags"].get(lag_key, {}).get("choice_effect", 0):.3f}', 
-                           fontweight='bold')
+                # Common formatting for all subplots
                 ax.set_xlabel('Stimulus Angle (degrees)')
                 ax.set_ylabel('P(Turn Right)')
                 ax.set_xlim(0, 90)
                 ax.set_ylim(0, 1)
                 ax.grid(True, alpha=0.3)
-                ax.legend(fontsize=8)
+                
+                # Add row labels on the left edge
+                if idx == 0:  # First column
+                    ax.text(-0.15, 0.5, f'n-{lag}', transform=ax.transAxes, 
+                           rotation=90, ha='center', va='center',
+                           fontsize=14, fontweight='bold', color='darkblue')
         
         plt.tight_layout()
         plt.show(block=False)
@@ -1517,10 +1653,151 @@ class SerialDependenceAnalyzer:
     
     def plot_temporal_history_pattern(self):
         """
-        Plot the temporal pattern of serial dependence effects showing that 
-        effects get stronger with deeper history (n-1 < n-2 < n-3)
+        Plot temporal patterns for all four types of serial dependence effects:
+        Choice, Perceptual, Outcome, and Difficulty
         """
         print(f"\n=== TEMPORAL HISTORY PATTERN ANALYSIS ===")
+        
+        if self.model is None:
+            print("No model available. Run analysis first.")
+            return None
+            
+        coefficients = self.model.coef_[0]
+        feature_names = self.feature_names
+        
+        # Extract all four types of history effects
+        effect_types = {
+            'Choice': 'action_n-',
+            'Perceptual': 'angle_n-', 
+            'Outcome': 'hitmiss_n-',
+            'Difficulty': 'difficulty_n-'
+        }
+        
+        all_effects = {}
+        for effect_name, pattern in effect_types.items():
+            history_effects = {}
+            for i, feature in enumerate(feature_names):
+                if pattern in feature:
+                    lag = int(feature.split('-')[1])
+                    history_effects[lag] = coefficients[i]
+            all_effects[effect_name] = history_effects
+        
+        # Remove empty effect types
+        all_effects = {k: v for k, v in all_effects.items() if v}
+        
+        if not all_effects:
+            print("No history effects found.")
+            return None
+        
+        # Create subplots for each effect type
+        n_effects = len(all_effects)
+        n_cols = min(2, n_effects)
+        n_rows = (n_effects + n_cols - 1) // n_cols
+        
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(12*n_cols, 6*n_rows))
+        fig.suptitle('Temporal Patterns of Multi-Dimensional Serial Dependence\n(How Different Types of History Effects Change Over Time)', 
+                    fontsize=18, fontweight='bold')
+        
+        if n_effects == 1:
+            axes = [axes]
+        elif n_rows == 1:
+            axes = axes if n_cols > 1 else [axes]
+        else:
+            axes = axes.flatten()
+        
+        # Color schemes for different effect types
+        color_schemes = {
+            'Choice': ['lightcoral', 'orange', 'red', 'darkred', 'maroon'],
+            'Perceptual': ['lightblue', 'skyblue', 'steelblue', 'navy', 'midnightblue'],
+            'Outcome': ['lightgreen', 'limegreen', 'forestgreen', 'darkgreen', 'darkslategray'],
+            'Difficulty': ['plum', 'orchid', 'mediumorchid', 'purple', 'indigo']
+        }
+        
+        for plot_idx, (effect_name, history_effects) in enumerate(all_effects.items()):
+            ax = axes[plot_idx]
+            
+            # Sort by lag
+            lags = sorted(history_effects.keys())
+            effects = [history_effects[lag] for lag in lags]
+            
+            # Get colors for this effect type
+            colors = color_schemes.get(effect_name, ['gray'] * len(lags))
+            colors = colors[:len(lags)]
+            
+            # Create bars
+            bars = ax.bar([f'n-{lag}' for lag in lags], effects, 
+                         color=colors, alpha=0.8, edgecolor='black', linewidth=2)
+            
+            # Add value labels on bars
+            for bar, effect, lag in zip(bars, effects, lags):
+                height = bar.get_height()
+                y_pos = height + (0.005 if height >= 0 else -0.01)
+                ax.text(bar.get_x() + bar.get_width()/2., y_pos,
+                       f'β = {effect:.4f}', ha='center', 
+                       va='bottom' if height >= 0 else 'top',
+                       fontweight='bold', fontsize=11)
+                
+                # Add rank labels
+                effect_ranks = sorted(range(len(effects)), key=lambda i: abs(effects[i]), reverse=True)
+                lag_to_rank = {lags[i]: effect_ranks.index(i) + 1 for i in range(len(lags))}
+                
+                def get_ordinal(n):
+                    if 10 <= n % 100 <= 20:
+                        suffix = 'th'
+                    else:
+                        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+                    return f'{n}{suffix}'
+                
+                rank = lag_to_rank[lag]
+                rank_label = f'{get_ordinal(rank)} strongest'
+                text_y = height/2 if height >= 0 else height/2
+                ax.text(bar.get_x() + bar.get_width()/2., text_y,
+                       rank_label, ha='center', va='center',
+                       fontweight='bold', fontsize=9, color='white')
+            
+            # Formatting
+            ax.set_xlabel('Trial Lag (how many trials back)', fontsize=12, fontweight='bold')
+            ax.set_ylabel(f'{effect_name} Effect (β coefficient)', fontsize=12, fontweight='bold')
+            
+            # Create specific titles for each effect type
+            if effect_name == 'Choice':
+                title = f'{effect_name} Serial Dependence Across Time\n(How past decisions influence current choices)'
+            elif effect_name == 'Perceptual':
+                title = f'{effect_name} Serial Dependence Across Time\n(How past stimuli influence current perception)'
+            elif effect_name == 'Outcome':
+                title = f'{effect_name} Serial Dependence Across Time\n(How past success/failure influences current choices)'
+            elif effect_name == 'Difficulty':
+                title = f'{effect_name} Serial Dependence Across Time\n(How past confidence influences current choices)'
+            else:
+                title = f'{effect_name} Serial Dependence Across Time'
+                
+            ax.set_title(title, fontsize=13, fontweight='bold', pad=15)
+            
+            # Add horizontal line at zero
+            ax.axhline(y=0, color='black', linestyle='--', alpha=0.5)
+            
+            # Set y-axis limits
+            if len(effects) > 0:
+                max_abs = max(abs(e) for e in effects)
+                ax.set_ylim(-max_abs*1.3, max_abs*1.3)
+            
+            ax.grid(True, alpha=0.3, axis='y')
+        
+        # Hide unused subplots
+        for i in range(len(all_effects), len(axes)):
+            axes[i].set_visible(False)
+        
+        plt.tight_layout()
+        plt.show(block=False)
+        
+        print(f"Temporal pattern plots created for {len(all_effects)} effect types")
+        return fig
+
+    def plot_temporal_history_pattern_legacy(self):
+        """
+        Legacy function: Plot the temporal pattern of choice serial dependence effects only
+        """
+        print(f"\n=== CHOICE TEMPORAL HISTORY PATTERN ANALYSIS ===")
         
         if self.model is None:
             print("No model available. Run analysis first.")
@@ -1549,7 +1826,7 @@ class SerialDependenceAnalyzer:
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
         # Create dynamic title based on actual lags
         lag_sequence = ' < '.join([f'n-{lag}' for lag in lags])
-        fig.suptitle(f'Temporal Pattern of Serial Dependence: Effects Strengthen with History Depth\n(Counter-intuitive finding: {lag_sequence})', 
+        fig.suptitle(f'Choice Serial Dependence: Temporal Pattern Across History\n(Counter-intuitive finding: {lag_sequence})', 
                     fontsize=16, fontweight='bold')
         
         # Create bars with gradient colors to show the pattern (dynamic based on history_depth)
