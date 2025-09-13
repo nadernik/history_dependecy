@@ -485,6 +485,7 @@ class SerialDependenceAnalyzer:
         history_effects = []
         threshold = np.percentile(np.abs(coefficients), 80)  # Top 20%
         
+        # First, add effects above threshold
         for feature, coeff in zip(self.feature_names, coefficients):
             if abs(coeff) > threshold and any(f"n-{i}" in feature for i in range(1, self.k + 1)):
                 if 'action_n-' in feature:
@@ -493,6 +494,28 @@ class SerialDependenceAnalyzer:
                 elif 'angle_n-' in feature:
                     lag = int(feature.split('angle_n-')[1])
                     history_effects.append(('angle', lag, feature, coeff))
+                elif 'hitmiss_n-' in feature:
+                    lag = int(feature.split('hitmiss_n-')[1])
+                    history_effects.append(('hitmiss', lag, feature, coeff))
+        
+        # Always include the most significant hit/miss effects (even if below threshold)
+        hitmiss_effects = []
+        for feature, coeff in zip(self.feature_names, coefficients):
+            if 'hitmiss_n-' in feature and any(f"n-{i}" in feature for i in range(1, self.k + 1)):
+                lag = int(feature.split('hitmiss_n-')[1])
+                hitmiss_effects.append((abs(coeff), 'hitmiss', lag, feature, coeff))
+        
+        # Add top 2 hit/miss effects if not already included
+        hitmiss_effects.sort(reverse=True)  # Sort by absolute coefficient
+        existing_hitmiss = [effect for effect in history_effects if effect[0] == 'hitmiss']
+        
+        for _, effect_type, lag, feature, coeff in hitmiss_effects[:2]:
+            if not any(e[1] == lag and e[0] == 'hitmiss' for e in existing_hitmiss):
+                history_effects.append((effect_type, lag, feature, coeff))
+                print(f"  Added top hit/miss effect: {feature}: β={coeff:.4f}")
+        
+        # Sort all effects by absolute coefficient value
+        history_effects.sort(key=lambda x: abs(x[3]), reverse=True)
         
         print(f"\nSignificant history effects:")
         for effect_type, lag, feature, coeff in history_effects:
@@ -519,7 +542,7 @@ class SerialDependenceAnalyzer:
         n_rows = (n_plots + n_cols - 1) // n_cols
         
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(5*n_cols, 4*n_rows))
-        fig.suptitle('Serial Dependence Effects: Choice History Influences Current Decisions', 
+        fig.suptitle('Serial Dependence Effects: How Past Trials Influence Current Decisions\n(Choices, Stimuli, and Outcomes)', 
                     fontsize=16, fontweight='bold', y=0.98)
         
         if n_plots == 1:
@@ -540,6 +563,10 @@ class SerialDependenceAnalyzer:
                 self._plot_angle_effect(ax, lag)
                 ax.set_title(f'Perceptual Serial Dependence (n-{lag})\nHow stimuli {lag} trials ago bias current choice\nβ={coeff:.3f}', 
                            fontsize=11)
+            elif effect_type == 'hitmiss':
+                self._plot_hitmiss_effect(ax, lag)
+                ax.set_title(f'Outcome Serial Dependence (n-{lag})\nHow success/failure {lag} trials ago bias current choice\nβ={coeff:.3f}', 
+                           fontsize=11)
             
             ax.set_xlabel('Current Stimulus Angle (degrees)')
             ax.set_ylabel('P(Turn Right)')
@@ -556,7 +583,64 @@ class SerialDependenceAnalyzer:
         plt.show(block=False)
         
         return fig
-    
+
+    def _plot_hitmiss_effect(self, ax, lag, angle_bins=None, angle_centers=None):
+        """Plot previous hit/miss effect with cumulative Gaussian fits"""
+        hitmiss_col = f'hitmiss_n-{lag}'
+        
+        # Get data
+        angles = self.df_processed['angle'].values
+        responses = self.df_processed['action'].values
+        
+        # Overall baseline curve
+        params, success, x_fit, y_fit = fit_psychometric_curve(angles, responses, min_trials=10)
+        if success:
+            ax.plot(x_fit, y_fit, 'k--', alpha=0.7, linewidth=2, label='Overall')
+        
+        # Plot for different previous outcomes
+        colors = ['red', 'green']  # Red for miss, green for hit
+        labels = ['Prev: Miss', 'Prev: Hit']
+        
+        for prev_outcome in [0, 1]:
+            # Filter data for this previous outcome
+            mask = self.df_processed[hitmiss_col] == prev_outcome
+            if mask.sum() < 20:  # Need sufficient data
+                continue
+                
+            angles_filtered = angles[mask]
+            responses_filtered = responses[mask]
+            
+            # Fit curve for this previous outcome
+            params, success, x_fit, y_fit = fit_psychometric_curve(
+                angles_filtered, responses_filtered, min_trials=5)
+            
+            if success:
+                ax.plot(x_fit, y_fit, color=colors[prev_outcome], 
+                       linewidth=2, label=labels[prev_outcome])
+            else:
+                # Fallback: calculate binned performance
+                unique_angles = np.unique(angles_filtered)
+                performance = []
+                plot_angles = []
+                
+                for angle in unique_angles:
+                    angle_mask = angles_filtered == angle
+                    if angle_mask.sum() >= 5:
+                        perf = np.mean(responses_filtered[angle_mask])
+                        performance.append(perf)
+                        plot_angles.append(angle)
+                
+                if len(plot_angles) > 0:
+                    ax.plot(plot_angles, performance, 'o-', 
+                           color=colors[prev_outcome], linewidth=2, 
+                           markersize=4, label=labels[prev_outcome])
+        
+        ax.set_xlabel('Stimulus Angle (degrees)')
+        ax.set_ylabel('P(Turn Right)')
+        ax.set_title(f'Previous Outcome Effect (n-{lag})')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
     def _plot_action_effect(self, ax, lag, angle_bins=None, angle_centers=None):
         """Plot previous action effect with cumulative Gaussian fits"""
         action_col = f'action_n-{lag}'
@@ -1463,13 +1547,25 @@ class SerialDependenceAnalyzer:
         
         # Create the bar plot
         fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-        fig.suptitle('Temporal Pattern of Serial Dependence: Effects Strengthen with History Depth\n(Counter-intuitive finding: n-1 < n-2 < n-3)', 
+        # Create dynamic title based on actual lags
+        lag_sequence = ' < '.join([f'n-{lag}' for lag in lags])
+        fig.suptitle(f'Temporal Pattern of Serial Dependence: Effects Strengthen with History Depth\n(Counter-intuitive finding: {lag_sequence})', 
                     fontsize=16, fontweight='bold')
         
-        # Create bars with gradient colors to show the pattern
-        colors = ['lightcoral', 'orange', 'darkred']  # Light to dark showing strengthening
+        # Create bars with gradient colors to show the pattern (dynamic based on history_depth)
+        # Generate colors from light to dark based on number of lags
+        import matplotlib.colors as mcolors
+        if len(lags) == 1:
+            colors = ['darkred']
+        elif len(lags) == 2:
+            colors = ['orange', 'darkred']
+        else:
+            # Generate gradient colors from light to dark
+            base_colors = ['lightcoral', 'orange', 'red', 'darkred', 'maroon']
+            colors = base_colors[:len(lags)]
+        
         bars = ax.bar([f'n-{lag}' for lag in lags], effects, 
-                     color=colors[:len(lags)], alpha=0.8, edgecolor='black', linewidth=2)
+                     color=colors, alpha=0.8, edgecolor='black', linewidth=2)
         
         # Add value labels on bars
         for bar, effect, lag in zip(bars, effects, lags):
@@ -1478,10 +1574,22 @@ class SerialDependenceAnalyzer:
                    f'β = {effect:.4f}', ha='center', va='bottom', 
                    fontweight='bold', fontsize=12)
             
-            # Add rank labels
-            rank_labels = {1: '3rd strongest', 2: '2nd strongest', 3: '1st strongest'}
+            # Add dynamic rank labels based on effect strength
+            effect_ranks = sorted(range(len(effects)), key=lambda i: effects[i], reverse=True)
+            lag_to_rank = {lags[i]: effect_ranks.index(i) + 1 for i in range(len(lags))}
+            
+            # Generate ordinal numbers dynamically
+            def get_ordinal(n):
+                if 10 <= n % 100 <= 20:
+                    suffix = 'th'
+                else:
+                    suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+                return f'{n}{suffix}'
+            
+            rank = lag_to_rank[lag]
+            rank_label = f'{get_ordinal(rank)} strongest'
             ax.text(bar.get_x() + bar.get_width()/2., height/2,
-                   rank_labels.get(lag, ''), ha='center', va='center',
+                   rank_label, ha='center', va='center',
                    fontweight='bold', fontsize=10, color='white')
         
         # Formatting
@@ -1493,14 +1601,20 @@ class SerialDependenceAnalyzer:
         # Add horizontal line at zero
         ax.axhline(y=0, color='black', linestyle='--', alpha=0.5)
         
-        # Add annotations explaining the pattern
-        ax.annotate('Expected: Monotonic decay\n(n-1 > n-2 > n-3)', 
-                   xy=(0.5, max(effects)*0.8), xytext=(0.5, max(effects)*0.9),
+        # Add dynamic annotations explaining the pattern
+        expected_sequence = ' > '.join([f'n-{lag}' for lag in lags])
+        observed_sequence = ' < '.join([f'n-{lag}' for lag in lags])
+        
+        # Position annotations dynamically based on number of bars
+        mid_point = (len(lags) - 1) / 2
+        
+        ax.annotate(f'Expected: Monotonic decay\n({expected_sequence})', 
+                   xy=(mid_point - 0.3, max(effects)*0.8), xytext=(mid_point - 0.3, max(effects)*0.9),
                    ha='center', fontsize=11, style='italic', color='gray',
                    arrowprops=dict(arrowstyle='->', color='gray', alpha=0.7))
         
-        ax.annotate('Observed: Strengthening pattern\n(n-1 < n-2 < n-3)', 
-                   xy=(1.5, max(effects)*0.95), xytext=(1.5, max(effects)*0.7),
+        ax.annotate(f'Observed: Strengthening pattern\n({observed_sequence})', 
+                   xy=(mid_point + 0.3, max(effects)*0.95), xytext=(mid_point + 0.3, max(effects)*0.7),
                    ha='center', fontsize=11, fontweight='bold', color='darkred',
                    arrowprops=dict(arrowstyle='->', color='darkred', lw=2))
         
@@ -1557,37 +1671,41 @@ class SerialDependenceAnalyzer:
                        ha='center', va='center', transform=ax.transAxes)
                 continue
             
-            # Get unique angles and calculate performance for each
-            unique_angles = sorted(mod_data['angle'].unique())
-            angles_for_fit = []
-            performance_for_fit = []
-            n_trials_for_fit = []
+            # Prepare data for fitting - use raw trial data, not aggregated performance
+            angles_raw = mod_data['angle'].values
+            responses_raw = mod_data['action'].values
             
-            # Calculate performance at each angle
+            # Get unique angles and calculate performance for plotting data points
+            unique_angles = sorted(mod_data['angle'].unique())
+            angles_for_plot = []
+            performance_for_plot = []
+            n_trials_for_plot = []
+            
+            # Calculate performance at each angle for data points
             for angle in unique_angles:
                 angle_data = mod_data[mod_data['angle'] == angle]
                 if len(angle_data) > 0:
                     perf = angle_data['action'].mean()
                     n_trials = len(angle_data)
-                    angles_for_fit.append(angle)
-                    performance_for_fit.append(perf)
-                    n_trials_for_fit.append(n_trials)
+                    angles_for_plot.append(angle)
+                    performance_for_plot.append(perf)
+                    n_trials_for_plot.append(n_trials)
             
-            # Convert to numpy arrays
-            angles_for_fit = np.array(angles_for_fit)
-            performance_for_fit = np.array(performance_for_fit)
-            n_trials_for_fit = np.array(n_trials_for_fit)
+            # Convert to numpy arrays for plotting
+            angles_for_plot = np.array(angles_for_plot)
+            performance_for_plot = np.array(performance_for_plot)
+            n_trials_for_plot = np.array(n_trials_for_plot)
             
             # Plot individual data points with size proportional to trial count
-            sizes = np.sqrt(n_trials_for_fit) * 2  # Scale for visibility
-            ax.scatter(angles_for_fit, performance_for_fit, 
+            sizes = np.sqrt(n_trials_for_plot) * 2  # Scale for visibility
+            ax.scatter(angles_for_plot, performance_for_plot, 
                       s=sizes, alpha=0.6, color=color, 
                       label=f'Data points (n={len(mod_data):,} trials)')
             
-            # Fit and plot psychometric curve
+            # Fit and plot psychometric curve using raw data (only the fit, no connecting lines)
             try:
                 popt, success, x_fit, y_fit = fit_psychometric_curve(
-                    angles_for_fit, performance_for_fit, min_trials=5)
+                    angles_raw, responses_raw, min_trials=5)
                 
                 if success:
                     ax.plot(x_fit, y_fit, '-', color=color, linewidth=3, 
@@ -1600,14 +1718,10 @@ class SerialDependenceAnalyzer:
                            verticalalignment='top', fontsize=10,
                            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
                 else:
-                    ax.plot(angles_for_fit, performance_for_fit, 'o-', 
-                           color=color, linewidth=2, markersize=6,
-                           label='Linear interpolation (fit failed)')
+                    print(f"Cumulative Gaussian fit failed for {modality_names[modality]}, skipping fit curve")
             except Exception as e:
                 print(f"Fitting failed for {modality_names[modality]}: {e}")
-                ax.plot(angles_for_fit, performance_for_fit, 'o-', 
-                       color=color, linewidth=2, markersize=6,
-                       label='Raw data (no fit)')
+                print("Only data points will be shown for this modality")
             
             # Formatting
             ax.set_xlabel('Stimulus Angle (degrees)', fontsize=12)
@@ -1619,10 +1733,10 @@ class SerialDependenceAnalyzer:
             ax.set_ylim(0, 1)
             
             # Set x-axis limits based on data range
-            if len(angles_for_fit) > 0:
-                angle_range = angles_for_fit.max() - angles_for_fit.min()
-                ax.set_xlim(angles_for_fit.min() - angle_range*0.1, 
-                           angles_for_fit.max() + angle_range*0.1)
+            if len(angles_for_plot) > 0:
+                angle_range = angles_for_plot.max() - angles_for_plot.min()
+                ax.set_xlim(angles_for_plot.min() - angle_range*0.1, 
+                           angles_for_plot.max() + angle_range*0.1)
         
         plt.tight_layout()
         plt.show(block=False)
@@ -1857,28 +1971,23 @@ class SerialDependenceAnalyzer:
             print("Model building failed!")
             return None
         
-        # Step 3: Analyze and visualize - Overall model
+        # Step 3: Analyze coefficients (no plotting here)
         history_effects = self.analyze_coefficients()
-        self.create_psychometric_plots(history_effects)
         
-        # Step 4: Individual rat analysis and detailed visualization
+        # Step 4: Individual rat analysis (no plotting here)
         print(f"\n=== DETAILED RAT-SPECIFIC ANALYSIS ===")
         rat_results = self.analyze_individual_rats()
         
         if rat_results:
-            # Create comprehensive dashboard
-            dashboard_figures = self.create_comprehensive_rat_dashboard(rat_results)
-            
             # Store rat results for further analysis
             self.rat_results = rat_results
-            
-            print(f"Created {len(dashboard_figures)} detailed visualization figures")
+            print(f"Individual rat analysis completed for {len(rat_results)} rats")
         
         print("\n" + "="*60)
         print("ANALYSIS COMPLETED SUCCESSFULLY!")
         print("="*60)
         
-        return model
+        return model, history_effects, rat_results
 
 
 def main():
@@ -1903,14 +2012,21 @@ def main():
     
     # Run the complete analysis to get overall results
     print("Running complete analysis...")
-    results = analyzer.run_complete_analysis()
+    model, history_effects, rat_results = analyzer.run_complete_analysis()
+    
+    # Create all plots (no duplication)
+    print("Creating all visualization plots...")
+    all_figures = [summary_fig]  # Start with summary figure
+    
+    # Create psychometric plots showing history effects
+    if history_effects:
+        psychometric_fig = analyzer.create_psychometric_plots(history_effects)
+        all_figures.append(psychometric_fig)
     
     # Create comprehensive dashboard with all rat results
-    print("Creating comprehensive rat dashboard...")
-    figures = analyzer.create_comprehensive_rat_dashboard()
-    
-    # Add summary figure to the beginning of the list
-    all_figures = [summary_fig] + figures
+    if rat_results:
+        dashboard_figures = analyzer.create_comprehensive_rat_dashboard(rat_results)
+        all_figures.extend(dashboard_figures)
     
     print(f"\nAnalysis complete! Generated {len(all_figures)} figures.")
     print("All plots are now displayed showing comprehensive results for each rat.")
@@ -1924,7 +2040,7 @@ def main():
     except:
         pass
     
-    return analyzer, results, all_figures
+    return analyzer, (model, history_effects, rat_results), all_figures
 
 
 if __name__ == "__main__":
