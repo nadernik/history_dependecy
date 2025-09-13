@@ -756,6 +756,289 @@ class SerialDependenceAnalyzer:
         
         return fig
     
+    def analyze_modality_sequences(self):
+        """
+        Analyze homo-modality vs hetero-modality sequences to test:
+        1. Perceptual history effects in homo vs hetero-modal sequences
+        2. Sequential choice effects across modalities
+        """
+        print(f"\n=== MODALITY SEQUENCE ANALYSIS ===")
+        
+        if self.df_processed is None:
+            print("No processed data available. Run analysis first.")
+            return None
+            
+        df = self.df_processed.copy()
+        
+        # Focus on T (1) and V (2) modalities for clear homo/hetero distinction
+        df_tv = df[df['mod'].isin([1, 2]) & df['mod_n-1'].isin([1, 2])]
+        
+        results = {}
+        
+        # 1. Classify sequences as homo or hetero-modal
+        df_tv['sequence_type'] = 'hetero'
+        homo_mask = df_tv['mod'] == df_tv['mod_n-1']
+        df_tv.loc[homo_mask, 'sequence_type'] = 'homo'
+        
+        print(f"Analyzing {len(df_tv)} T-V trials:")
+        print(f"  Homo-modal sequences: {sum(homo_mask)} ({100*sum(homo_mask)/len(df_tv):.1f}%)")
+        print(f"  Hetero-modal sequences: {sum(~homo_mask)} ({100*sum(~homo_mask)/len(df_tv):.1f}%)")
+        
+        # 2. Analyze perceptual history effects (stimulus angle effects)
+        print("\n--- PERCEPTUAL HISTORY EFFECTS ---")
+        perceptual_results = self._analyze_perceptual_history_effects(df_tv)
+        results['perceptual_effects'] = perceptual_results
+        
+        # 3. Analyze sequential choice effects
+        print("\n--- SEQUENTIAL CHOICE EFFECTS ---")
+        choice_results = self._analyze_sequential_choice_effects(df_tv)
+        results['choice_effects'] = choice_results
+        
+        # 4. Test specific hypotheses
+        print("\n--- HYPOTHESIS TESTING ---")
+        hypothesis_results = self._test_modality_hypotheses(df_tv)
+        results['hypothesis_tests'] = hypothesis_results
+        
+        return results
+    
+    def _analyze_perceptual_history_effects(self, df_tv):
+        """Analyze how previous stimulus angles affect current choices in homo vs hetero sequences"""
+        results = {}
+        
+        for seq_type in ['homo', 'hetero']:
+            seq_data = df_tv[df_tv['sequence_type'] == seq_type].copy()
+            
+            # Create modality indicator (Vision = 1, Touch = 0)
+            seq_data['is_vision'] = (seq_data['mod'] == 2).astype(int)
+            
+            # Fit model with angle history effects
+            features = ['angle', 'angle_n-1', 'is_vision']
+            X = seq_data[features].values
+            y = seq_data['action'].values
+            
+            # Standardize features
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            
+            # Fit logistic regression
+            model = LogisticRegression(random_state=42)
+            model.fit(X_scaled, y)
+            
+            # Store results
+            results[seq_type] = {
+                'n_trials': len(seq_data),
+                'coefficients': dict(zip(features, model.coef_[0])),
+                'angle_n1_effect': model.coef_[0][1],  # Previous angle effect
+                'accuracy': model.score(X_scaled, y)
+            }
+            
+            print(f"  {seq_type.capitalize()}-modal sequences:")
+            print(f"    N trials: {len(seq_data)}")
+            print(f"    Previous angle effect (β): {model.coef_[0][1]:.4f}")
+            print(f"    Model accuracy: {model.score(X_scaled, y):.3f}")
+        
+        # Test for difference in angle history effects
+        homo_effect = results['homo']['angle_n1_effect']
+        hetero_effect = results['hetero']['angle_n1_effect']
+        
+        print(f"\n  Comparison:")
+        print(f"    Homo-modal angle effect: {homo_effect:.4f}")
+        print(f"    Hetero-modal angle effect: {hetero_effect:.4f}")
+        print(f"    Difference: {hetero_effect - homo_effect:.4f}")
+        
+        return results
+    
+    def _analyze_sequential_choice_effects(self, df_tv):
+        """Analyze how previous choices affect current choices in homo vs hetero sequences"""
+        results = {}
+        
+        for seq_type in ['homo', 'hetero']:
+            seq_data = df_tv[df_tv['sequence_type'] == seq_type].copy()
+            
+            # Create modality indicator (Vision = 1, Touch = 0)
+            seq_data['is_vision'] = (seq_data['mod'] == 2).astype(int)
+            
+            # Fit model with choice history effects
+            features = ['angle', 'action_n-1', 'is_vision']  # action_n-1 is previous choice
+            X = seq_data[features].values
+            y = seq_data['action'].values
+            
+            # Standardize features
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            
+            # Fit logistic regression
+            model = LogisticRegression(random_state=42)
+            model.fit(X_scaled, y)
+            
+            # Store results
+            results[seq_type] = {
+                'n_trials': len(seq_data),
+                'coefficients': dict(zip(features, model.coef_[0])),
+                'action_n1_effect': model.coef_[0][1],  # Previous choice effect
+                'accuracy': model.score(X_scaled, y)
+            }
+            
+            print(f"  {seq_type.capitalize()}-modal sequences:")
+            print(f"    N trials: {len(seq_data)}")
+            print(f"    Previous choice effect (β): {model.coef_[0][1]:.4f}")
+            print(f"    Model accuracy: {model.score(X_scaled, y):.3f}")
+        
+        # Test for difference in choice history effects
+        homo_effect = results['homo']['action_n1_effect']
+        hetero_effect = results['hetero']['action_n1_effect']
+        
+        print(f"\n  Comparison:")
+        print(f"    Homo-modal choice effect: {homo_effect:.4f}")
+        print(f"    Hetero-modal choice effect: {hetero_effect:.4f}")
+        print(f"    Difference: {hetero_effect - homo_effect:.4f}")
+        
+        return results
+    
+    def _test_modality_hypotheses(self, df_tv):
+        """Test specific hypotheses about modality effects"""
+        results = {}
+        
+        # Hypothesis 1: Hetero-modal sequences show repulsion (negative angle effect)
+        hetero_data = df_tv[df_tv['sequence_type'] == 'hetero']
+        
+        # Simple correlation between previous angle and current choice
+        angle_choice_corr = np.corrcoef(hetero_data['angle_n-1'], hetero_data['action'])[0,1]
+        
+        print(f"Hypothesis 1 - Hetero-modal repulsion:")
+        print(f"  Correlation between previous angle and current choice: {angle_choice_corr:.4f}")
+        print(f"  Repulsion evidence: {'YES' if angle_choice_corr < 0 else 'NO'}")
+        
+        # Hypothesis 2: Attractive choice effects occur even for hetero-modal sequences
+        choice_choice_corr = np.corrcoef(hetero_data['action_n-1'], hetero_data['action'])[0,1]
+        
+        print(f"\nHypothesis 2 - Hetero-modal choice attraction:")
+        print(f"  Correlation between previous and current choice: {choice_choice_corr:.4f}")
+        print(f"  Attraction evidence: {'YES' if choice_choice_corr > 0 else 'NO'}")
+        
+        results['hetero_repulsion'] = angle_choice_corr < 0
+        results['hetero_choice_attraction'] = choice_choice_corr > 0
+        results['angle_choice_corr'] = angle_choice_corr
+        results['choice_choice_corr'] = choice_choice_corr
+        
+        return results
+    
+    def plot_modality_sequence_results(self, modality_results=None):
+        """Plot comprehensive results of modality sequence analysis"""
+        if modality_results is None:
+            modality_results = self.analyze_modality_sequences()
+        
+        if modality_results is None:
+            print("No modality results to plot")
+            return None
+            
+        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+        fig.suptitle('Modality Sequence Analysis Results', fontsize=16, fontweight='bold')
+        
+        # Plot 1: Perceptual history effects comparison
+        perceptual = modality_results['perceptual_effects']
+        homo_angle = perceptual['homo']['angle_n1_effect']
+        hetero_angle = perceptual['hetero']['angle_n1_effect']
+        
+        axes[0,0].bar(['Homo-modal', 'Hetero-modal'], [homo_angle, hetero_angle], 
+                     color=['skyblue', 'lightcoral'])
+        axes[0,0].set_title('Previous Angle Effect (Perceptual History)')
+        axes[0,0].set_ylabel('Coefficient (β)')
+        axes[0,0].axhline(y=0, color='black', linestyle='--', alpha=0.5)
+        
+        # Add significance indicators
+        if hetero_angle < 0:
+            axes[0,0].text(1, hetero_angle-0.01, 'Repulsion', ha='center', fontweight='bold')
+        
+        # Plot 2: Choice history effects comparison  
+        choice = modality_results['choice_effects']
+        homo_choice = choice['homo']['action_n1_effect']
+        hetero_choice = choice['hetero']['action_n1_effect']
+        
+        axes[0,1].bar(['Homo-modal', 'Hetero-modal'], [homo_choice, hetero_choice],
+                     color=['skyblue', 'lightcoral'])
+        axes[0,1].set_title('Previous Choice Effect (Sequential Choice)')
+        axes[0,1].set_ylabel('Coefficient (β)')
+        axes[0,1].axhline(y=0, color='black', linestyle='--', alpha=0.5)
+        
+        # Add significance indicators
+        if hetero_choice > 0:
+            axes[0,1].text(1, hetero_choice+0.01, 'Attraction', ha='center', fontweight='bold')
+        
+        # Plot 3: Trial counts
+        homo_trials = perceptual['homo']['n_trials']
+        hetero_trials = perceptual['hetero']['n_trials']
+        
+        axes[1,0].pie([homo_trials, hetero_trials], labels=['Homo-modal', 'Hetero-modal'],
+                     autopct='%1.1f%%', colors=['skyblue', 'lightcoral'])
+        axes[1,0].set_title('Distribution of Sequence Types')
+        
+        # Plot 4: Hypothesis test results
+        hyp = modality_results['hypothesis_tests']
+        
+        # Create a summary plot
+        axes[1,1].text(0.1, 0.8, 'HYPOTHESIS TEST RESULTS', fontsize=14, fontweight='bold')
+        axes[1,1].text(0.1, 0.6, f'H1: Hetero-modal repulsion', fontsize=12)
+        axes[1,1].text(0.1, 0.5, f'    Evidence: {"✓" if hyp["hetero_repulsion"] else "✗"}', fontsize=12)
+        axes[1,1].text(0.1, 0.4, f'    Correlation: {hyp["angle_choice_corr"]:.3f}', fontsize=12)
+        
+        axes[1,1].text(0.1, 0.2, f'H2: Hetero-modal choice attraction', fontsize=12)
+        axes[1,1].text(0.1, 0.1, f'    Evidence: {"✓" if hyp["hetero_choice_attraction"] else "✗"}', fontsize=12)
+        axes[1,1].text(0.1, 0.0, f'    Correlation: {hyp["choice_choice_corr"]:.3f}', fontsize=12)
+        
+        axes[1,1].set_xlim(0, 1)
+        axes[1,1].set_ylim(-0.1, 1)
+        axes[1,1].axis('off')
+        
+        plt.tight_layout()
+        return fig
+    
+    def analyze_individual_rat_modality_effects(self, rat_id):
+        """Analyze modality-specific effects for a single rat"""
+        if self.df_processed is None:
+            print("No processed data available. Run analysis first.")
+            return None
+            
+        rat_data = self.df_processed[self.df_processed['rat'] == rat_id]
+        
+        # Focus on T-V sequences
+        rat_tv = rat_data[rat_data['mod'].isin([1, 2]) & rat_data['mod_n-1'].isin([1, 2])]
+        
+        if len(rat_tv) < 50:  # Need minimum trials
+            print(f"Insufficient T-V trials for rat {rat_id}: {len(rat_tv)}")
+            return None
+            
+        # Classify sequences
+        rat_tv['sequence_type'] = 'hetero'
+        homo_mask = rat_tv['mod'] == rat_tv['mod_n-1']
+        rat_tv.loc[homo_mask, 'sequence_type'] = 'homo'
+        
+        results = {
+            'rat_id': rat_id,
+            'total_trials': len(rat_tv),
+            'homo_trials': sum(homo_mask),
+            'hetero_trials': sum(~homo_mask)
+        }
+        
+        # Test both sequence types if sufficient data
+        for seq_type in ['homo', 'hetero']:
+            seq_data = rat_tv[rat_tv['sequence_type'] == seq_type]
+            
+            if len(seq_data) < 20:  # Minimum for reliable analysis
+                continue
+                
+            # Perceptual history effect
+            angle_choice_corr = np.corrcoef(seq_data['angle_n-1'], seq_data['action'])[0,1]
+            
+            # Choice history effect  
+            choice_choice_corr = np.corrcoef(seq_data['action_n-1'], seq_data['action'])[0,1]
+            
+            results[f'{seq_type}_angle_effect'] = angle_choice_corr
+            results[f'{seq_type}_choice_effect'] = choice_choice_corr
+            results[f'{seq_type}_trials'] = len(seq_data)
+        
+        return results
+
     def create_comprehensive_rat_dashboard(self, rat_results=None):
         """Create a comprehensive dashboard for all rats"""
         print(f"\n=== COMPREHENSIVE RAT DASHBOARD ===")
@@ -785,6 +1068,12 @@ class SerialDependenceAnalyzer:
         summary_fig = self._plot_rat_summary_stats(rat_results)
         if summary_fig:
             figures.append(summary_fig)
+        
+        # 4. Modality sequence analysis
+        print("Creating modality sequence analysis...")
+        modality_fig = self.plot_modality_sequence_results()
+        if modality_fig:
+            figures.append(modality_fig)
         
         plt.show()
         return figures
