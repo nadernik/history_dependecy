@@ -159,10 +159,48 @@ class SerialDependenceAnalyzer:
             print("Loading preprocessed data from CSV...")
             
             try:
-                # Load the CSV file
-                df_processed = pd.read_csv(self.csv_path)
+                # Check for metadata in CSV file
+                with open(self.csv_path, 'r') as f:
+                    first_lines = [f.readline().strip() for _ in range(10)]
                 
-                # Verify it has the expected columns for our history depth
+                metadata_info = {}
+                for line in first_lines:
+                    if line.startswith('# History Depth (k):'):
+                        try:
+                            metadata_info['history_depth'] = int(line.split(':')[1].strip())
+                        except:
+                            pass
+                    elif line.startswith('# Generated:'):
+                        metadata_info['generated'] = line.split(':', 1)[1].strip()
+                
+                if 'generated' in metadata_info:
+                    print(f"   CSV metadata: Generated {metadata_info['generated']}")
+                
+                # Load the CSV file (skip comment lines)
+                df_processed = pd.read_csv(self.csv_path, comment='#')
+                
+                # Detect the history depth of the existing CSV file
+                existing_history_columns = [col for col in df_processed.columns if '_n-' in col]
+                if existing_history_columns:
+                    # Extract the maximum lag number from column names
+                    max_lag_in_csv = 0
+                    for col in existing_history_columns:
+                        if '_n-' in col:
+                            try:
+                                lag = int(col.split('_n-')[1])
+                                max_lag_in_csv = max(max_lag_in_csv, lag)
+                            except:
+                                continue
+                    
+                    if max_lag_in_csv != self.k:
+                        print(f"⚠️  HISTORY DEPTH MISMATCH DETECTED:")
+                        print(f"   Current history_depth: {self.k}")
+                        print(f"   CSV file history_depth: {max_lag_in_csv}")
+                        print(f"   CSV file needs to be regenerated with history_depth={self.k}")
+                        print(f"   Will reprocess from MAT file to create correct history columns...")
+                        return None
+                
+                # Verify it has all the expected columns for our history depth
                 expected_lag_columns = []
                 for i in range(1, self.k + 1):
                     expected_lag_columns.extend([
@@ -173,8 +211,9 @@ class SerialDependenceAnalyzer:
                 missing_columns = [col for col in expected_lag_columns if col not in df_processed.columns]
                 
                 if missing_columns:
-                    print(f"Warning: CSV file missing expected columns: {missing_columns}")
-                    print("CSV file may not match current history depth. Will reprocess from MAT file.")
+                    print(f"⚠️  CSV file missing expected columns: {missing_columns}")
+                    print(f"   This indicates the CSV doesn't match the current history_depth={self.k}")
+                    print(f"   Will reprocess from MAT file to generate correct columns...")
                     return None
                 
                 # Set both df and df_processed since CSV contains fully processed data
@@ -185,10 +224,11 @@ class SerialDependenceAnalyzer:
                 available_basic_columns = [col for col in basic_columns if col in df_processed.columns]
                 self.df = df_processed[available_basic_columns].copy()
                 
-                print(f"Successfully loaded preprocessed data!")
-                print(f"Total trials with complete history: {len(self.df_processed)}")
-                print(f"Rats included: {sorted(self.df_processed['rat'].unique())}")
-                print(f"Modalities: {sorted(self.df_processed['mod'].unique())}")
+                print(f"✅ Successfully loaded preprocessed data!")
+                print(f"   History depth matches: {self.k} (CSV is compatible)")
+                print(f"   Total trials with complete history: {len(self.df_processed)}")
+                print(f"   Rats included: {sorted(self.df_processed['rat'].unique())}")
+                print(f"   Modalities: {sorted(self.df_processed['mod'].unique())}")
                 
                 return self.df_processed
                 
@@ -205,8 +245,28 @@ class SerialDependenceAnalyzer:
         if self.df_processed is not None:
             try:
                 print(f"Saving processed data to: {self.csv_path}")
-                self.df_processed.to_csv(self.csv_path, index=False)
-                print("Processed data saved successfully!")
+                
+                # Create a temporary file with metadata header
+                import tempfile
+                import shutil
+                
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv') as temp_file:
+                    # Write metadata as comments at the top
+                    temp_file.write(f"# Serial Dependence Analysis - Processed Data\n")
+                    temp_file.write(f"# History Depth (k): {self.k}\n")
+                    temp_file.write(f"# Generated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    temp_file.write(f"# Total trials: {len(self.df_processed)}\n")
+                    temp_file.write(f"# Rats: {sorted(self.df_processed['rat'].unique())}\n")
+                    temp_file.write(f"# Modalities: {sorted(self.df_processed['mod'].unique())}\n")
+                    temp_file.write(f"#\n")
+                    
+                    # Write the actual CSV data
+                    self.df_processed.to_csv(temp_file, index=False)
+                
+                # Move temp file to final location
+                shutil.move(temp_file.name, self.csv_path)
+                print(f"✅ Processed data saved successfully with history_depth={self.k} metadata!")
+                
             except Exception as e:
                 print(f"Error saving processed data: {e}")
     
@@ -1252,7 +1312,8 @@ class SerialDependenceAnalyzer:
         if n_modalities == 1:
             axes = [axes]
         
-        modality_colors = {'Touch (T)': 'green', 'Vision (V)': 'blue', 'Visual-Tactile (VT)': 'red'}
+        # Define modality colors: [[0, 2/3, 0], [0, 0.4470, 0.7410], [1, 0, 0], [0, 0, 0]]
+        modality_colors = {'Touch (T)': [0, 2/3, 0], 'Vision (V)': [0, 0.4470, 0.7410], 'Visual-Tactile (VT)': [1, 0, 0]}
         
         for idx, (mod_id, mod_results) in enumerate(modality_history_results.items()):
             ax = axes[idx]
@@ -1313,7 +1374,8 @@ class SerialDependenceAnalyzer:
         if n_modalities == 1:
             axes = axes.reshape(-1, 1)
         
-        modality_colors = {'Touch (T)': 'green', 'Vision (V)': 'blue', 'Visual-Tactile (VT)': 'red'}
+        # Define modality colors: [[0, 2/3, 0], [0, 0.4470, 0.7410], [1, 0, 0], [0, 0, 0]]
+        modality_colors = {'Touch (T)': [0, 2/3, 0], 'Vision (V)': [0, 0.4470, 0.7410], 'Visual-Tactile (VT)': [1, 0, 0]}
         
         for idx, (mod_id, mod_results) in enumerate(modality_history_results.items()):
             mod_name = mod_results['name']
@@ -1454,6 +1516,118 @@ class SerialDependenceAnalyzer:
         plt.tight_layout()
         plt.show(block=False)
         
+        return fig
+
+    def plot_summary_psychometric_by_modality(self):
+        """Plot summary psychometric curves with data points for all rats across 3 modalities"""
+        print("Creating summary psychometric curves by modality...")
+        
+        # Ensure data is loaded
+        if self.df is None or self.df_processed is None:
+            print("Data not loaded. Loading data first...")
+            result = self.check_and_load_csv()
+            if result is None:
+                print("Loading from MAT file...")
+                self.load_and_preprocess_data()
+        
+        # Define modality colors: [[0, 2/3, 0], [0, 0.4470, 0.7410], [1, 0, 0], [0, 0, 0]]
+        modality_colors = {
+            1: [0, 2/3, 0],      # Touch - Green
+            2: [0, 0.4470, 0.7410],  # Vision - Blue  
+            3: [1, 0, 0]         # Visual-Tactile - Red
+        }
+        
+        modality_names = {1: 'Touch (T)', 2: 'Vision (V)', 3: 'Visual-Tactile (VT)'}
+        
+        # Create figure
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+        fig.suptitle('Summary Psychometric Curves by Modality\n(All Rats Combined with Individual Data Points)', 
+                    fontsize=16, fontweight='bold')
+        
+        # Process each modality
+        for mod_idx, modality in enumerate([1, 2, 3]):
+            ax = axes[mod_idx]
+            color = modality_colors[modality]
+            
+            # Filter data for this modality
+            mod_data = self.df[self.df['mod'] == modality].copy()
+            
+            if len(mod_data) == 0:
+                ax.text(0.5, 0.5, f'No data for {modality_names[modality]}', 
+                       ha='center', va='center', transform=ax.transAxes)
+                continue
+            
+            # Get unique angles and calculate performance for each
+            unique_angles = sorted(mod_data['angle'].unique())
+            angles_for_fit = []
+            performance_for_fit = []
+            n_trials_for_fit = []
+            
+            # Calculate performance at each angle
+            for angle in unique_angles:
+                angle_data = mod_data[mod_data['angle'] == angle]
+                if len(angle_data) > 0:
+                    perf = angle_data['action'].mean()
+                    n_trials = len(angle_data)
+                    angles_for_fit.append(angle)
+                    performance_for_fit.append(perf)
+                    n_trials_for_fit.append(n_trials)
+            
+            # Convert to numpy arrays
+            angles_for_fit = np.array(angles_for_fit)
+            performance_for_fit = np.array(performance_for_fit)
+            n_trials_for_fit = np.array(n_trials_for_fit)
+            
+            # Plot individual data points with size proportional to trial count
+            sizes = np.sqrt(n_trials_for_fit) * 2  # Scale for visibility
+            ax.scatter(angles_for_fit, performance_for_fit, 
+                      s=sizes, alpha=0.6, color=color, 
+                      label=f'Data points (n={len(mod_data):,} trials)')
+            
+            # Fit and plot psychometric curve
+            try:
+                popt, success, x_fit, y_fit = fit_psychometric_curve(
+                    angles_for_fit, performance_for_fit, min_trials=5)
+                
+                if success:
+                    ax.plot(x_fit, y_fit, '-', color=color, linewidth=3, 
+                           label=f'Cumulative Gaussian fit')
+                    
+                    # Add fit parameters as text
+                    mu, sigma, gamma, lambda_param = popt
+                    fit_text = f'μ={mu:.1f}°, σ={sigma:.1f}°\nγ={gamma:.3f}, λ={lambda_param:.3f}'
+                    ax.text(0.02, 0.98, fit_text, transform=ax.transAxes, 
+                           verticalalignment='top', fontsize=10,
+                           bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+                else:
+                    ax.plot(angles_for_fit, performance_for_fit, 'o-', 
+                           color=color, linewidth=2, markersize=6,
+                           label='Linear interpolation (fit failed)')
+            except Exception as e:
+                print(f"Fitting failed for {modality_names[modality]}: {e}")
+                ax.plot(angles_for_fit, performance_for_fit, 'o-', 
+                       color=color, linewidth=2, markersize=6,
+                       label='Raw data (no fit)')
+            
+            # Formatting
+            ax.set_xlabel('Stimulus Angle (degrees)', fontsize=12)
+            ax.set_ylabel('P(Turn Right)', fontsize=12)
+            ax.set_title(f'{modality_names[modality]}\n{len(mod_data):,} trials', 
+                        fontsize=14, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            ax.legend(fontsize=10)
+            ax.set_ylim(0, 1)
+            
+            # Set x-axis limits based on data range
+            if len(angles_for_fit) > 0:
+                angle_range = angles_for_fit.max() - angles_for_fit.min()
+                ax.set_xlim(angles_for_fit.min() - angle_range*0.1, 
+                           angles_for_fit.max() + angle_range*0.1)
+        
+        plt.tight_layout()
+        plt.show(block=False)
+        
+        print(f"Summary psychometric curves created for {len(modality_names)} modalities")
         return fig
 
     def create_comprehensive_rat_dashboard(self, rat_results=None):
@@ -1713,8 +1887,19 @@ def main():
     
     analyzer = SerialDependenceAnalyzer(
         data_path='data/behavior_data.mat',
-        history_depth=3
+        history_depth=5
     )
+    
+    # First, load the data
+    print("Loading data...")
+    data_result = analyzer.check_and_load_csv()
+    if data_result is None:
+        print("CSV not found or incompatible, loading from MAT file...")
+        analyzer.load_and_preprocess_data()
+    
+    # Now plot summary psychometric curves by modality
+    print("Creating summary psychometric curves by modality...")
+    summary_fig = analyzer.plot_summary_psychometric_by_modality()
     
     # Run the complete analysis to get overall results
     print("Running complete analysis...")
@@ -1724,7 +1909,10 @@ def main():
     print("Creating comprehensive rat dashboard...")
     figures = analyzer.create_comprehensive_rat_dashboard()
     
-    print(f"\nAnalysis complete! Generated {len(figures)} figures.")
+    # Add summary figure to the beginning of the list
+    all_figures = [summary_fig] + figures
+    
+    print(f"\nAnalysis complete! Generated {len(all_figures)} figures.")
     print("All plots are now displayed showing comprehensive results for each rat.")
     print("All figures will remain open - you can interact with them freely!")
     
@@ -1736,7 +1924,7 @@ def main():
     except:
         pass
     
-    return analyzer, results, figures
+    return analyzer, results, all_figures
 
 
 if __name__ == "__main__":
