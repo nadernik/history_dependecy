@@ -133,7 +133,8 @@ class SerialDependenceAnalyzer:
     Simplified analyzer using sklearn instead of statsmodels
     """
     
-    def __init__(self, data_path='data/behavior_data.mat', history_depth=3, csv_path='processed_behavior_data.csv'):
+    def __init__(self, data_path='data/behavior_data.mat', history_depth=3, csv_path='processed_behavior_data.csv',
+                 save_figures=True, figures_dir='figures'):
         self.data_path = data_path
         self.csv_path = csv_path
         self.k = history_depth
@@ -144,6 +145,17 @@ class SerialDependenceAnalyzer:
         self.scaler = StandardScaler()
         self.rat_results = None
         
+        # Figure saving settings
+        self.save_figures = save_figures
+        self.figures_dir = figures_dir
+        
+        # Create figures directory if it doesn't exist
+        if self.save_figures:
+            import os
+            if not os.path.exists(self.figures_dir):
+                os.makedirs(self.figures_dir)
+                print(f"Created figures directory: {self.figures_dir}")
+        
         # Define modality mappings
         self.modality_names = {1: 'T', 2: 'V', 3: 'VT', 4: 'Control'}
         self.rev_rule_rats = [6, 7, 14, 15, 16, 17]
@@ -151,6 +163,16 @@ class SerialDependenceAnalyzer:
         print(f"Serial Dependence Analyzer initialized with k={self.k}")
         print(f"MAT file: {self.data_path}")
         print(f"CSV file: {self.csv_path}")
+        if self.save_figures:
+            print(f"Figures will be saved to: {self.figures_dir}")
+    
+    def _save_figure(self, fig, filename, dpi=300):
+        """Helper method to save figures"""
+        if self.save_figures:
+            import os
+            filepath = os.path.join(self.figures_dir, filename)
+            fig.savefig(filepath, dpi=dpi, bbox_inches='tight', facecolor='white')
+            print(f"Figure saved: {filepath}")
     
     def check_and_load_csv(self):
         """Check if preprocessed CSV file exists and load it"""
@@ -615,6 +637,9 @@ class SerialDependenceAnalyzer:
         plt.tight_layout()
         plt.show(block=False)
         
+        # Save figure
+        self._save_figure(fig, f'02_serial_dependence_effects_k{self.k}.png')
+        
         return fig
 
     def _plot_hitmiss_effect(self, ax, lag, angle_bins=None, angle_centers=None):
@@ -986,6 +1011,10 @@ class SerialDependenceAnalyzer:
             
             plt.tight_layout()
             plt.show(block=False)
+            
+            # Save figure
+            self._save_figure(fig, f'03_individual_rats_set{fig_idx + 1}_k{self.k}.png')
+            
             figures.append(fig)
         
         return figures
@@ -1113,6 +1142,9 @@ class SerialDependenceAnalyzer:
                     fontsize=14, fontweight='bold', pad=20)
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'04_coefficients_heatmap_k{self.k}.png')
         
         return fig
     
@@ -1540,6 +1572,9 @@ class SerialDependenceAnalyzer:
         plt.tight_layout()
         plt.show(block=False)
         
+        # Save figure
+        self._save_figure(fig, f'06_modality_specific_history_effects_k{self.k}.png')
+        
         return fig
     
     def plot_modality_psychometric_comparison(self, modality_history_results=None):
@@ -1648,6 +1683,9 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'07_modality_psychometric_comparison_k{self.k}.png')
         
         return fig
     
@@ -1789,6 +1827,9 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'05_temporal_patterns_all_effects_k{self.k}.png')
         
         print(f"Temporal pattern plots created for {len(all_effects)} effect types")
         return fig
@@ -2017,6 +2058,9 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'01_summary_psychometric_by_modality_k{self.k}.png')
         
         print(f"Summary psychometric curves created for {len(modality_names)} modalities")
         return fig

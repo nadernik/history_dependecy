@@ -601,12 +601,18 @@ This comprehensive analysis successfully addressed both primary research objecti
    - **Memory consolidation-based serial dependence**: Non-monotonic temporal patterns
    - **Metacognitive control**: Brain monitors its own confidence levels
 
-7. **Clinical and Applied Implications**: 
+7. **Mathematical Formulation**: Developed rigorous mathematical framework with:
+   - **Complete LaTeX specification** of 16-feature logistic regression model
+   - **Four-type coefficient interpretation** (Choice, Perceptual, Outcome, Difficulty)
+   - **Expanded algebraic form** showing all 17 parameters explicitly
+   - **Publication-ready documentation** for reproducible research
+
+8. **Clinical and Applied Implications**: 
    - **Diagnostic potential**: Four-dimensional assessment of decision-making disorders
    - **Therapeutic targets**: Specific interventions for different dependency types
    - **Individual profiling**: Personalized assessment across all dependency dimensions
 
-8. **Statistical Rigor**: Analysis of >834k trials across 12 subjects with cross-validation and robust coefficient estimation
+9. **Statistical Rigor**: Analysis of >834k trials across 12 subjects with cross-validation and robust coefficient estimation
 
 ### 6.3 Enhanced Visualization and Analysis Capabilities
 
@@ -627,6 +633,9 @@ The analysis pipeline now provides unprecedented visualization of multi-dimensio
 - **Color-coded modalities**: Consistent visualization scheme ([0, 2/3, 0], [0, 0.4470, 0.7410], [1, 0, 0])
 - **Metadata tracking**: CSV files include generation parameters
 - **History depth validation**: Automatic detection and regeneration when needed
+- **Automatic Figure Saving**: High-resolution PNG export (300 DPI) with organized naming
+- **Publication-Ready Output**: All figures automatically saved to `figures/` directory with overwrite protection
+- **Sequential Naming**: Organized file naming (01_summary, 02_effects, 03_individual, etc.) with history depth tags
 
 ### 6.4 Practical Applications
 
@@ -700,24 +709,45 @@ Columns: 16 features + metadata
 
 ### 7.3 Enhanced Statistical Models
 
-**Multi-Dimensional Model Equation:**
+**Complete Multi-Dimensional Serial Dependence Model:**
+
+The comprehensive logistic regression model captures four distinct types of serial dependence effects:
+
+$$\text{logit}(P(\text{action} = 1)) = \beta_0 + \beta_1 \cdot \text{angle} + \sum_{m=1}^{3} \beta_{m+1} \cdot \mathbf{1}[\text{mod} = m] + \sum_{i=1}^{k} \left[ \beta_{\text{choice},i} \cdot \text{action}_{n-i} + \beta_{\text{perceptual},i} \cdot \text{angle}_{n-i} + \beta_{\text{outcome},i} \cdot \text{hitmiss}_{n-i} + \beta_{\text{difficulty},i} \cdot \text{difficulty}_{n-i} \right]$$
+
+**Expanded Form (k=3, 16 features):**
+$$\begin{align}
+\text{logit}(P(\text{action} = 1)) = &\beta_0 + \beta_1 \cdot \text{angle} \\
+&+ \beta_2 \cdot \mathbf{1}[\text{mod} = 1] + \beta_3 \cdot \mathbf{1}[\text{mod} = 2] + \beta_4 \cdot \mathbf{1}[\text{mod} = 3] \\
+&+ \beta_5 \cdot \text{action}_{n-1} + \beta_6 \cdot \text{action}_{n-2} + \beta_7 \cdot \text{action}_{n-3} \\
+&+ \beta_8 \cdot \text{angle}_{n-1} + \beta_9 \cdot \text{angle}_{n-2} + \beta_{10} \cdot \text{angle}_{n-3} \\
+&+ \beta_{11} \cdot \text{hitmiss}_{n-1} + \beta_{12} \cdot \text{hitmiss}_{n-2} + \beta_{13} \cdot \text{hitmiss}_{n-3} \\
+&+ \beta_{14} \cdot \text{difficulty}_{n-1} + \beta_{15} \cdot \text{difficulty}_{n-2} + \beta_{16} \cdot \text{difficulty}_{n-3}
+\end{align}$$
+
+**Variable Definitions:**
+- **Current Trial**: $\text{angle}$ (0°-90°), $\text{mod}$ (1=Touch, 2=Vision, 3=Visual-Tactile)
+- **Historical Variables**: $\text{action}_{n-i}$ (0=left, 1=right), $\text{angle}_{n-i}$ (0°-90°), $\text{hitmiss}_{n-i}$ (0=miss, 1=hit), $\text{difficulty}_{n-i} = |\text{angle}_{n-i} - 45°|$
+
+**Four-Type Serial Dependence Framework:**
+1. **Choice Effects** ($\beta_{\text{choice},i}$): Motor memory and decision bias (attractive: β > 0)
+2. **Perceptual Effects** ($\beta_{\text{perceptual},i}$): Sensory adaptation (repulsive: β < 0)
+3. **Outcome Effects** ($\beta_{\text{outcome},i}$): Reinforcement learning (win-stay: β > 0)
+4. **Difficulty Effects** ($\beta_{\text{difficulty},i}$): Confidence-weighted influence (uncertain trials: β < 0)
+
+**Model Properties:**
+- Algorithm: L2-regularized Logistic Regression (C=1.0)
+- Features: StandardScaler preprocessing
+- Total Parameters: 17 (intercept + 16 features)
+- History Depth: k=3 trials
+
+**Specialized Modality-Specific Models:**
 ```
-logit(P(action=1)) = β₀ + β₁·angle + β₂·mod₁ + β₃·mod₂ + β₄·mod₃ + 
-                     Σᵢ₌₁³ [βᵢ₊₄·action_{n-i} + βᵢ₊₇·angle_{n-i} + 
-                            βᵢ₊₁₀·hitmiss_{n-i} + βᵢ₊₁₃·difficulty_{n-i}]
+Perceptual: logit(P(action=1)) = β₀ + β₁·angle + β₂·angle_{n-1} + β₃·𝟙[vision]
+Choice: logit(P(action=1)) = β₀ + β₁·angle + β₂·action_{n-1} + β₃·𝟙[vision]
 ```
 
-**Four-Type Serial Dependence:**
-1. **Choice**: β·action_{n-i} (motor memory, decision bias)
-2. **Perceptual**: β·angle_{n-i} (sensory adaptation, expectation)
-3. **Outcome**: β·hitmiss_{n-i} (reinforcement learning)
-4. **Difficulty**: β·difficulty_{n-i} (confidence weighting, negative coefficients)
-
-**Modality-Specific Models:**
-```
-Perceptual: logit(P(action=1)) = β₀ + β₁·angle + β₂·angle_{n-1} + β₃·is_vision
-Choice: logit(P(action=1)) = β₀ + β₁·angle + β₂·action_{n-1} + β₃·is_vision
-```
+**Complete Mathematical Documentation:** See `serial_dependence_model_formula.md` for full LaTeX formulation and coefficient interpretations.
 
 ### 7.4 Performance Benchmarks
 
@@ -738,24 +768,32 @@ Choice: logit(P(action=1)) = β₀ + β₁·angle + β₂·action_{n-1} + β₃�
 
 ## References and Documentation
 
-**Analysis Pipeline:** `serial_dependence_analysis.py` (1,964 lines)  
+**Analysis Pipeline:** `serial_dependence_analysis.py` (2,000+ lines)  
 **Data Source:** `data/behavior_data.mat`  
 **Processed Cache:** `processed_behavior_data.csv` (with difficulty features)  
-**Visualization Output:** 8+ comprehensive figures including multi-dimensional analysis  
-**Report Updated:** September 13, 2025  
-**Major Updates:** Four-type serial dependence, confidence-weighted learning, enhanced visualization  
+**Mathematical Documentation:** `serial_dependence_model_formula.md` (LaTeX formulation)  
+**Visualization Output:** 7+ comprehensive figures with automatic PNG export  
+**Report Updated:** September 14, 2025  
+**Major Updates:** Mathematical formula documentation, automatic figure saving, enhanced model specification  
 
 **Code Repository Structure:**
 ```
 history_dependecy/
-├── serial_dependence_analysis.py    # Main analysis pipeline
-├── demo_rat_analysis.py            # Usage examples
-├── run_pipeline.py                 # Execution wrapper
-├── behavior_exploration.ipynb      # Exploratory analysis
+├── serial_dependence_analysis.py         # Main analysis pipeline
+├── serial_dependence_model_formula.md    # Mathematical model documentation
+├── demo_rat_analysis.py                 # Usage examples
+├── run_pipeline.py                      # Execution wrapper
+├── behavior_exploration.ipynb           # Exploratory analysis
 ├── data/
-│   └── behavior_data.mat          # Raw behavioral data
-├── processed_behavior_data.csv    # Cached processed data
-└── TECHNICAL_RESEARCH_REPORT.md   # This report
+│   └── behavior_data.mat               # Raw behavioral data
+├── processed_behavior_data.csv         # Cached processed data
+├── figures/                            # Auto-generated publication figures
+│   ├── 01_summary_psychometric_by_modality_k3.png
+│   ├── 02_serial_dependence_effects_k3.png
+│   ├── 03_individual_rats_set1_k3.png
+│   └── ... (additional figures)
+├── TECHNICAL_RESEARCH_REPORT.md        # This comprehensive report
+└── .gitignore                          # Version control configuration
 ```
 
 ---
