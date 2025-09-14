@@ -15,6 +15,9 @@
 # Generated figures directory
 figures/
 
+# Analysis logs directory
+logs/
+
 # Python cache and compiled files
 __pycache__/
 *.py[cod]

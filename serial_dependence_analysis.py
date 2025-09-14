@@ -35,6 +35,10 @@ import scipy.io
 import seaborn as sns
 import warnings
 import os
+import sys
+import io
+from datetime import datetime
+import contextlib
 from scipy import stats
 from scipy.special import erf
 from scipy.optimize import curve_fit
@@ -44,6 +48,98 @@ from sklearn.model_selection import cross_val_score
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
+
+
+class AnalysisLogger:
+    """Logger class to capture all analysis output to timestamped log files"""
+    
+    def __init__(self, log_dir='logs', enable_logging=True):
+        self.log_dir = log_dir
+        self.enable_logging = enable_logging
+        self.log_file = None
+        self.original_stdout = None
+        self.original_stderr = None
+        
+        if self.enable_logging:
+            # Create logs directory if it doesn't exist
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+                
+            # Generate timestamped log filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_filename = f"serial_dependence_analysis_{timestamp}.log"
+            self.log_filepath = os.path.join(self.log_dir, self.log_filename)
+    
+    def start_logging(self):
+        """Start capturing output to log file"""
+        if not self.enable_logging:
+            return
+            
+        self.log_file = open(self.log_filepath, 'w', encoding='utf-8')
+        
+        # Write header
+        self.log_file.write("=" * 80 + "\n")
+        self.log_file.write("SERIAL DEPENDENCE ANALYSIS - COMPLETE LOG\n")
+        self.log_file.write("=" * 80 + "\n")
+        self.log_file.write(f"Analysis started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        self.log_file.write(f"Log file: {self.log_filename}\n")
+        self.log_file.write("=" * 80 + "\n\n")
+        self.log_file.flush()
+        
+        # Create a custom stdout that writes to both console and file
+        self.original_stdout = sys.stdout
+        self.original_stderr = sys.stderr
+        
+        class TeeOutput:
+            def __init__(self, file1, file2):
+                self.file1 = file1
+                self.file2 = file2
+                
+            def write(self, data):
+                self.file1.write(data)
+                self.file2.write(data)
+                self.file1.flush()
+                self.file2.flush()
+                
+            def flush(self):
+                self.file1.flush()
+                self.file2.flush()
+        
+        sys.stdout = TeeOutput(self.original_stdout, self.log_file)
+        sys.stderr = TeeOutput(self.original_stderr, self.log_file)
+        
+        print(f"📝 Logging enabled: {self.log_filepath}")
+        print("All analysis output will be saved to this log file.\n")
+    
+    def stop_logging(self):
+        """Stop capturing output and close log file"""
+        if not self.enable_logging or self.log_file is None:
+            return
+            
+        print("\n" + "=" * 80)
+        print(f"Analysis completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 80)
+        
+        # Restore original stdout/stderr
+        sys.stdout = self.original_stdout
+        sys.stderr = self.original_stderr
+        
+        # Write footer and close
+        self.log_file.write("\n" + "=" * 80 + "\n")
+        self.log_file.write(f"Analysis completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        self.log_file.write("=" * 80 + "\n")
+        self.log_file.close()
+        
+        print(f"📝 Complete analysis log saved: {self.log_filepath}")
+        print(f"📊 Log file size: {os.path.getsize(self.log_filepath) / 1024:.1f} KB")
+    
+    def __enter__(self):
+        self.start_logging()
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_logging()
+
 
 # Set up plotting style
 plt.style.use('default')
@@ -134,7 +230,7 @@ class SerialDependenceAnalyzer:
     """
     
     def __init__(self, data_path='data/behavior_data.mat', history_depth=3, csv_path='processed_behavior_data.csv',
-                 save_figures=True, figures_dir='figures'):
+                 save_figures=True, figures_dir='figures', enable_logging=False, log_dir='logs'):
         self.data_path = data_path
         self.csv_path = csv_path
         self.k = history_depth
@@ -148,6 +244,11 @@ class SerialDependenceAnalyzer:
         # Figure saving settings
         self.save_figures = save_figures
         self.figures_dir = figures_dir
+        
+        # Logging settings
+        self.enable_logging = enable_logging
+        self.log_dir = log_dir
+        self.logger = None
         
         # Create figures directory if it doesn't exist
         if self.save_figures:
@@ -165,6 +266,20 @@ class SerialDependenceAnalyzer:
         print(f"CSV file: {self.csv_path}")
         if self.save_figures:
             print(f"Figures will be saved to: {self.figures_dir}")
+        if self.enable_logging:
+            print(f"Logging will be saved to: {self.log_dir}")
+    
+    def start_logging(self):
+        """Start logging analysis output to file"""
+        if self.enable_logging and self.logger is None:
+            self.logger = AnalysisLogger(log_dir=self.log_dir, enable_logging=True)
+            self.logger.start_logging()
+    
+    def stop_logging(self):
+        """Stop logging analysis output"""
+        if self.logger is not None:
+            self.logger.stop_logging()
+            self.logger = None
     
     def _save_figure(self, fig, filename, dpi=300):
         """Helper method to save figures"""
@@ -2328,55 +2443,58 @@ class SerialDependenceAnalyzer:
 
 def main():
     """Main function - runs comprehensive analysis and plots results for each rat"""
-    print("Starting comprehensive serial dependence analysis...")
     
-    analyzer = SerialDependenceAnalyzer(
-        data_path='data/behavior_data.mat',
-        history_depth=5
-    )
-    
-    # First, load the data
-    print("Loading data...")
-    data_result = analyzer.check_and_load_csv()
-    if data_result is None:
-        print("CSV not found or incompatible, loading from MAT file...")
-        analyzer.load_and_preprocess_data()
-    
-    # Now plot summary psychometric curves by modality
-    print("Creating summary psychometric curves by modality...")
-    summary_fig = analyzer.plot_summary_psychometric_by_modality()
-    
-    # Run the complete analysis to get overall results
-    print("Running complete analysis...")
-    model, history_effects, rat_results = analyzer.run_complete_analysis()
-    
-    # Create all plots (no duplication)
-    print("Creating all visualization plots...")
-    all_figures = [summary_fig]  # Start with summary figure
-    
-    # Create psychometric plots showing history effects
-    if history_effects:
-        psychometric_fig = analyzer.create_psychometric_plots(history_effects)
-        all_figures.append(psychometric_fig)
-    
-    # Create comprehensive dashboard with all rat results
-    if rat_results:
-        dashboard_figures = analyzer.create_comprehensive_rat_dashboard(rat_results)
-        all_figures.extend(dashboard_figures)
-    
-    print(f"\nAnalysis complete! Generated {len(all_figures)} figures.")
-    print("All plots are now displayed showing comprehensive results for each rat.")
-    print("All figures will remain open - you can interact with them freely!")
-    
-    # Keep all plots open
-    try:
-        import matplotlib
-        if matplotlib.get_backend() != 'Agg':  # Only if not headless
-            plt.show(block=True)  # This will keep all figures open
-    except:
-        pass
-    
-    return analyzer, (model, history_effects, rat_results), all_figures
+    # Initialize logger
+    with AnalysisLogger(log_dir='logs', enable_logging=True) as logger:
+        print("Starting comprehensive serial dependence analysis...")
+        
+        analyzer = SerialDependenceAnalyzer(
+            data_path='data/behavior_data.mat',
+            history_depth=5
+        )
+        
+        # First, load the data
+        print("Loading data...")
+        data_result = analyzer.check_and_load_csv()
+        if data_result is None:
+            print("CSV not found or incompatible, loading from MAT file...")
+            analyzer.load_and_preprocess_data()
+        
+        # Now plot summary psychometric curves by modality
+        print("Creating summary psychometric curves by modality...")
+        summary_fig = analyzer.plot_summary_psychometric_by_modality()
+        
+        # Run the complete analysis to get overall results
+        print("Running complete analysis...")
+        model, history_effects, rat_results = analyzer.run_complete_analysis()
+        
+        # Create all plots (no duplication)
+        print("Creating all visualization plots...")
+        all_figures = [summary_fig]  # Start with summary figure
+        
+        # Create psychometric plots showing history effects
+        if history_effects:
+            psychometric_fig = analyzer.create_psychometric_plots(history_effects)
+            all_figures.append(psychometric_fig)
+        
+        # Create comprehensive dashboard with all rat results
+        if rat_results:
+            dashboard_figures = analyzer.create_comprehensive_rat_dashboard(rat_results)
+            all_figures.extend(dashboard_figures)
+        
+        print(f"\nAnalysis complete! Generated {len(all_figures)} figures.")
+        print("All plots are now displayed showing comprehensive results for each rat.")
+        print("All figures will remain open - you can interact with them freely!")
+        
+        # Keep all plots open
+        try:
+            import matplotlib
+            if matplotlib.get_backend() != 'Agg':  # Only if not headless
+                plt.show(block=True)  # This will keep all figures open
+        except:
+            pass
+        
+        return analyzer, (model, history_effects, rat_results), all_figures
 
 
 if __name__ == "__main__":
