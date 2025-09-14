@@ -1386,6 +1386,10 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'08_hetero_homo_modality_test_k{self.k}.png')
+        
         return fig
     
     def analyze_individual_rat_modality_effects(self, rat_id):
@@ -1948,6 +1952,9 @@ class SerialDependenceAnalyzer:
         plt.tight_layout()
         plt.show(block=False)
         
+        # Save figure
+        self._save_figure(fig, f'09_temporal_pattern_legacy_k{self.k}.png')
+        
         return fig
 
     def plot_summary_psychometric_by_modality(self):
@@ -2163,6 +2170,10 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'10_rat_summary_stats_k{self.k}.png')
+        
         return fig
     
     def plot_specific_rat(self, rat_id, show_coefficients=True):
@@ -2216,6 +2227,10 @@ class SerialDependenceAnalyzer:
         
         plt.tight_layout()
         plt.show(block=False)
+        
+        # Save figure
+        self._save_figure(fig, f'11_specific_rat_{rat_id}_k{self.k}.png')
+        
         return fig
     
     def get_rat_summary(self, rat_id=None):
