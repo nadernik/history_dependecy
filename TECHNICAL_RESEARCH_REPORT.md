@@ -1,6 +1,6 @@
 # Technical Research Report: Serial Dependence Analysis in Visual-Tactile Decision Making
 
-**Author:** Research Analysis Pipeline  
+**Author:** Nader Nikbakht
 **Date:** September 12, 2025  
 **Project:** History Dependency Analysis in Multisensory Psychophysical Task  
 

@@ -1,16 +1,3 @@
-# Email Report to Mathew: Serial Dependence Analysis in Visual-Tactile Decision Making
-
-**To:** Mathew  
-**From:** [Your Name]  
-**Date:** September 14, 2025  
-**Subject:** Serial Dependence Analysis Results - Visual-Tactile Decision Making Study
-
----
-
-Hi Mathew,
-
-I wanted to share the comprehensive results from our serial dependence analysis of the visual-tactile orientation discrimination task. The analysis has revealed some fascinating insights into how past trials influence current decision-making across sensory modalities.
-
 ## **🎯 Project Overview**
 
 We analyzed **834k+ trials** from **12 rats** performing an orientation discrimination task across three sensory modalities:
@@ -128,12 +115,6 @@ All materials are ready for review:
 - **High-resolution figures** (10 publication-ready visualizations)
 - **Analysis logs** with complete coefficient records
 
-This work represents a significant advance in understanding how past experience shapes current decisions across sensory modalities. The multi-dimensional framework and cross-modal findings open exciting new research directions.
-
-I'm happy to discuss any aspects of the analysis or present the findings in more detail. The Google Slides are ready whenever you'd like to review them.
-
-Best regards,  
-[Your Name]
 
 ---
 
