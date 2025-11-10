@@ -22,99 +22,155 @@ git commit -m "progress" --> makes a local checkpoint in your branch.
 git push --> from the second time onwards
 '''
 
-# coping from behavior_exploration.ipynb
-
-# Import necessary libraries
+# coping from serial_dependence_analysis.py and functions_Ale.py
 import numpy as np
-import matplotlib.pyplot as plt
-import scipy.io
 import pandas as pd
-from scipy.optimize import curve_fit
-from scipy import stats
-import seaborn as sns
-from sklearn.metrics import mutual_info_score
-import warnings
-warnings.filterwarnings('ignore')
+import matplotlib.pyplot as plt
+from serial_dependence_analysis import SerialDependenceAnalyzer
+from serial_dependence_analysis import fit_psychometric_curve
+import functions_Ale as fa
 
-# Set up plotting style
-plt.style.use('default')
-sns.set_palette("husl")
-plt.rcParams['figure.figsize'] = (12, 8)
-plt.rcParams['font.size'] = 12
+an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)  # k=1 is enough for n-1 effects
+an.load_and_preprocess_data()
+df_processed = an.create_lagged_features()
+# what it does
+#Loads & cleans the data (load_and_preprocess_data()).
+#Converts all angles to 0–90°.
+#Creates lagged features (so you get angle_n-1, action_n-1, etc.).
+#Builds a logistic regression model that directly uses numeric angles (continuous).
 
-print("Libraries imported successfully!")
+# BINNING n-1 BY UNIQUE ANGLES
+
+df_processed = fa.bin_by_unique_angles(df_processed, name_new_col='bin_angle_n-1', n_groups=11, angle_col='angle_n-1', exclude_angle=45) # we have 33 unique angles excluding 45, so 11 groups of 3 angles each
+#print(type(df_processed['bin_angle_n-1'].head(10)))
+#print(f"current trial: {df_processed[['angle', 'bin_angle']].sample(10, random_state=42)}")
+#print(f"past trial:{df_processed[['angle_n-1', 'bin_angle_n-1']].sample(10, random_state=42)}")
+
+# PLOTTING PSYCHOMETRIC CURVES CONDITIONED ON PREVIOUS-TRIAL ANGLE BINS
 
 
-# Load the behavioral data
-def load_behavior_data(filepath):
-    """Load and structure the behavioral data from .mat file"""
-    data = scipy.io.loadmat(filepath)
-    trial_data = data['TrialNADER'][0, 0]
+BIN_COL   = 'bin_angle_n-1'  
+ANGLE_COL = 'angle'
+RESP_COL  = 'action'
+# Cleaning --> DROP NaNs(45°) in previous-angle bin
+dfc = df_processed.dropna(subset=[BIN_COL]).copy()
+
+# Create a summary table per (prev-bin, current angle)
+agg = fa.aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL)
+# agg is my mini dataframe with mean, n and se for each combination of previous angle bin and current angle (only for combinations that have at least 5 trials)
+
+# --- Color mapping ---
+bin_means = {b: fa.midpoint(b) for b in dfc[BIN_COL].unique()}
+plt.figure(figsize=(10, 7))
+# --- Prepare unique color per bin, grouped by angle family (<45° = blue, ≥45° = red)
+color_by_bin = fa.color_bin(bin_means)
+
+# --- Plot each previous-angle bin ---
+for i, b in enumerate(sorted(bin_means, key=lambda x: bin_means[x])):
+    sub = agg[agg[BIN_COL] == b] #sub --> all rows where for ex. BIN_COL == (0,15]:
+    sub = sub.sort_values(ANGLE_COL) # apparently not necessary, I cann't notice any difference in the plot but just to be sure
+    if sub.empty: #sub --> there are no matches for that bin (but this should have been filtered out before)
+        continue
     
-    # Convert to dictionary for easier access
-    trial_dict = {}
-    for field in trial_data.dtype.names:
-        trial_dict[field] = trial_data[field][0].flatten()
+    color = color_by_bin[b]
+
+    # Dots with error bars
+    plt.errorbar(sub[ANGLE_COL], sub['mean'], yerr=sub['se'],
+                 fmt='o', ms=4, alpha=0.9, label=str(b), color=color)
     
-    # Create a pandas DataFrame for easier manipulation
-    df = pd.DataFrame(trial_dict)
-    
-    # Convert numeric columns to proper types
-    numeric_columns = ['rat', 'trialID', 'date', 'oricat', 'action', 'hitmiss', 'penalty', 
-                      'penaltyTime', 'samplingTime', 'theta', 'cumPerformance', 'mod', 'angle', 
-                      'alpha', 'stimColor', 'RT', 'PT', 'rewardDelay', 'trialReset', 
-                      'brightness', 'soa', 'soundQ', 'soundQType']
-    
-    for col in numeric_columns:
-        if col in df.columns:
-            # First convert to string, then to numeric to handle any data type issues
-            df[col] = pd.to_numeric(df[col].astype(str), errors='coerce')
-    
-    # Remove rows with NaN values in critical columns
-    df = df.dropna(subset=['rat', 'action', 'hitmiss', 'mod', 'angle'])
-    
-    return df, trial_dict
+    # Fit psychometric curve using your colleague’s function
+    raw = dfc[dfc[BIN_COL] == b]
+    popt, ok, x_fit, y_fit = fit_psychometric_curve(
+        raw[ANGLE_COL], raw[RESP_COL], min_trials=5
+    )
+    if ok:
+        plt.plot(x_fit, y_fit, color=color, alpha=0.9)
+# the gaussian curves are fitted with raw data not with means
 
-# Load the data
-df, trial_data = load_behavior_data('data/behavior_data.mat')
+# Decorations
+plt.axhline(0.5, color='k', ls='--', alpha=0.4)
+plt.axvline(45, color='k', ls='--', alpha=0.4)
+plt.xlim(0, 90)
+plt.ylim(0, 1)
+plt.xlabel('Current angle (deg)')
+plt.ylabel('P(action = 1)')
+plt.title('Psychometric curves conditioned on previous-trial angle')
+plt.legend(title='Prev angle bin', fontsize=9)
+plt.tight_layout()
+plt.show()
 
-# SIMPLIFIED DATA PROCESSING
-print("=== SIMPLIFIED DATA PROCESSING ===")
-
-# 1. Filter rats: exclude [8,14,15,17:21]
-rats = df['rat'].unique()
-rats = rats[~np.isin(rats, [8,14,15,17,18,19,20,21])]
-df = df[df['rat'].isin(rats)]
-
-# 2. Ensure action is binary 0 or 1
-df['action'] = df['action'].astype(int)
-df = df[df['action'].isin([0, 1])]
-
-# 3. Ensure hitmiss is binary: 0=fail, 1=hit
-df['hitmiss'] = df['hitmiss'].astype(int)
-df = df[df['hitmiss'].isin([0, 1])]
-
-# 4. Map all angles to 0-90 range
-# Rule: angle>180 -> angle-180; angle>90 -> (90-(angle-90))+90
-df['angle'] = df['angle'].astype(float)
-#print(f"Angle range: {df['angle'].min():.2f}° to {df['angle'].max():.2f}°")
+#outliers = agg[(agg['mean'] == 0) | (agg['mean'] == 1)]
+#print(outliers[['angle', BIN_COL, 'mean', 'n']])
 
 
-df.loc[df['angle'] > 180, 'angle'] = df.loc[df['angle'] > 180, 'angle'] - 180 # they turn out as[135 140 141 143 145 150 151 155 159 160 165 169 170 175]
+# Now plot separated by modality transition
 
-mask = (df['angle'] > 90) & (df['angle'] < 134)
-df.loc[mask, 'angle'] = (90 - (df.loc[mask, 'angle'] - 90))
-df.loc[df['angle'] > 134, 'angle'] = -(df.loc[df['angle'] > 134, 'angle'] - 180)
 
-unique_angles = np.sort(df['angle'].unique()) # 43 unique angles after mapping - 1 (bc we exclude 45°) = 42, binning options: 6, 7, 14, 21
-print("Unique angles:", unique_angles)
-print('angle range successfully mapped angles to 0-90° range!')
+BIN_COL    = 'bin_angle_n-1'          # your previous-angle bins
+TRANS_COL  = 'mod_transition_n-1'     # e.g. 'T->V', 'V->VT', ...
+ANGLE_COL  = 'angle'
+RESP_COL   = 'action'
+MIN_N      = 5
 
-# Binning my angles 
-from functions_Ale import bin_by_unique_angles # fix this import path later
+#dfc = df_processed.dropna(subset=[BIN_COL, TRANS_COL]).copy()
 
-df, angle_to_label= bin_by_unique_angles(df, n_groups=6, angle_col='angle', exclude_angle=45)
-print(angle_to_label)
+# --- Helper: get numeric midpoint of bin label ---
+
+#bin_means = {b: fa.midpoint(b) for b in dfc[BIN_COL].unique()}
+
+
+# --- Get unique transitions ---
+transitions = sorted(dfc[TRANS_COL].dropna().unique(), key=str)
+n_trans = len(transitions)
+
+# --- Prepare subplot grid ---
+ncols = int(np.ceil(np.sqrt(n_trans)))
+nrows = int(np.ceil(n_trans / ncols))
+fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows), sharex=True, sharey=True, constrained_layout=True)
+axes = np.array(axes).reshape(-1)  # flatten in case grid isn't full
+
+# --- Plot each transition in its own subplot ---
+for ax, tr in zip(axes, transitions):
+    sub_tr = dfc[dfc[TRANS_COL] == tr]
+    agg = fa.aggregate_data(sub_tr, BIN_COL, ANGLE_COL, RESP_COL)
+
+    # Loop over previous-angle bins
+    for i, b in enumerate(sorted(bin_means, key=lambda x: bin_means[x])):
+        sub = agg[agg[BIN_COL] == b].sort_values(ANGLE_COL)
+        if sub.empty:
+            continue
+        # choose color family
+        color = color_by_bin[b]
+
+        # dots with error bars
+        ax.errorbar(sub[ANGLE_COL], sub['mean'], yerr=sub['se'],
+                    fmt='o', ms=3.5, alpha=0.9, label=str(b), color=color)
+
+        # fit psychometric curve
+        raw = sub_tr[sub_tr[BIN_COL] == b]
+        popt, ok, x_fit, y_fit = fit_psychometric_curve(
+            raw[ANGLE_COL], raw[RESP_COL], min_trials=MIN_N
+        )
+        if ok:
+            ax.plot(x_fit, y_fit, color=color, alpha=0.9)
+
+    # subplot decorations
+    ax.axhline(0.5, color='k', ls='--', alpha=0.4)
+    ax.axvline(45, color='k', ls='--', alpha=0.4)
+    ax.set_xlim(0, 90)
+    ax.set_ylim(0, 1)
+    ax.set_title(f'{tr}', fontsize=12)
+    ax.set_xlabel('Current angle (deg)')
+    ax.set_ylabel('P(action = 1)')
+
+# --- Global figure tweaks ---
+handles, labels = ax.get_legend_handles_labels()
+fig.legend(handles, labels, title='Prev angle bin', loc='upper center',
+           ncol=8, bbox_to_anchor=(0.5, 1.00), fontsize=9)
+fig.suptitle('Psychometric curves by previous-trial angle for each modality transition', fontsize=14, y=1.04)
+#fig.tight_layout()
+plt.show()
+
 
 
 
