@@ -31,14 +31,14 @@ from serial_dependence_analysis import fit_psychometric_curve
 import functions_Ale as fa
 
 # LOAD DATA AND PREPROCESS
-an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)  # k=1 is enough for n-1 effects
+an = SerialDependenceAnalyzer(history_depth=1, save_figures=False) 
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 #Converts already angles to 0–90°.
 #Creates lagged features (so you get angle_n-1, action_n-1, etc.).
 
 # BINNING n-1 BY UNIQUE ANGLES (and excluding 45°)
-df_processed = fa.bin_by_unique_angles(df_processed, name_new_col='bin_angle_n-1', n_groups=11, angle_col='angle_n-1', exclude_angle=45) 
+df_processed, angle_to_label = fa.bin_by_unique_angles(df_processed, name_new_col='bin_angle_n-1', n_groups=6, angle_col='angle_n-1', exclude_angle=45) 
 # we have 33 unique angles excluding 45, so 11 groups of 3 angles each
 # these are my 11 bins: 0–5°, 8–10°, 15–20°, 21–26°, 27–30°, 34–40°, 50–53°, 55–60°, 65–70°, 73–80°, 82–90
 
@@ -49,17 +49,16 @@ ANGLE_COL = 'angle'
 RESP_COL  = 'action'
 HIT_COL = 'hitmiss_n-1'   # <-- not used if you don't want to filter by hits/misses 
 
-
 # Cleaning --> DROP NaNs(45°) in angle n-1 bins
 dfc = df_processed.dropna(subset=[BIN_COL]).copy()
 
-'''
+#'''
 #UNLOCK TO SEE THE EFFECTS CONTROLLED FOR PREVIOUS TRIAL HITS/MISSES
 dfc = (df_processed
        .dropna(subset=[BIN_COL, HIT_COL])
-       .loc[lambda d:  d[HIT_COL].astype(bool)]      # keeps True / 1 # add ~ before d[HIT_COL] to keep False / 0
+       .loc[lambda d:  ~d[HIT_COL].astype(bool)]      # keeps True / 1 # add ~ before d[HIT_COL] to keep False / 0
        .copy())
-''' 
+#''' 
 
 # Create a summary table paired per (n-1_bin, current angle)
 agg = fa.aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL)
@@ -81,6 +80,7 @@ for i, b in enumerate(sorted(bin_means, key=lambda x: bin_means[x])):
     color = color_by_bin[b]
 
     # Dots with error bars
+    
     plt.errorbar(sub[ANGLE_COL], sub['mean'], yerr=sub['se'],
                  fmt='o', ms=4, alpha=0.9, label=str(b), color=color)
     
@@ -100,7 +100,7 @@ plt.xlim(0, 90)
 plt.ylim(0, 1)
 plt.xlabel('Current angle (deg)')
 plt.ylabel('P(action = 1)')
-plt.title('Psychometric curves conditioned on previous-trial angle, only n-1 miss', fontsize=14)
+plt.title('Psychometric curves conditioned on previous-trial angle, only miss', fontsize=14)
 plt.legend(title='Prev angle bin', fontsize=9)
 plt.tight_layout()
 plt.show()
@@ -173,7 +173,7 @@ for ax, tr in zip(axes, transitions):
 handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles, labels, title='Prev angle bin', loc='upper center',
            ncol=8, bbox_to_anchor=(0.5, 1.08), fontsize=9)
-fig.suptitle('Psychometric curves by previous-trial angle for each modality transition', fontsize=14, y=1.04)
+fig.suptitle('Psychometric curves by previous-trial angle for each modality transition, only miss', fontsize=14, y=1.04)
 plt.show()
 
 

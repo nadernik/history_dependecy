@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45):
+def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45, min_count=100):
     """
     Bin by *unique angle values* so each bin has (nearly) the same count of distinct angles.
     Rows with angle==exclude are removed first.
@@ -15,8 +15,14 @@ def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45
       - 'index' : integer bin index 0..n_groups-1
     """
 
+  # === COUNT OCCURRENCES OF EACH ANGLE ===
+    counts = df[angle_col].value_counts()
+
+    # === KEEP ONLY ANGLES THAT APPEAR AT LEAST `min_count` TIMES ===
+    valid_angles = counts[counts >= min_count].index
+
     # === EXCLUDE 45° AND GET UNIQUE ANGLES ===
-    unique_angles = np.sort(df.loc[df[angle_col] != exclude_angle, angle_col].unique())
+    unique_angles = np.sort(df.loc[(df[angle_col].isin(valid_angles)) & (df[angle_col] != exclude_angle), angle_col].unique())
 
     # === SPLIT UNIQUE ANGLES INTO ~EQUAL-SIZED GROUPS ===
     groups = np.array_split(unique_angles, n_groups)
@@ -30,12 +36,9 @@ def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45
     # === CREATE NEW COLUMN WITH BIN LABEL ===
     df[name_new_col] = df[angle_col].map(angle_to_label)
 
-    # Optional: mark excluded 45° explicitly if you still have them
-    #df.loc[df[angle_col] == exclude_angle, 'angle_bin'] = np.nan
-
-    print(df[[angle_col, name_new_col]].sample(15, random_state=42))
+    #print(df[[angle_col, name_new_col]].sample(15, random_state=42))
     
-    return df
+    return df, angle_to_label
 
 def midpoint(interval):
     if hasattr(interval, 'mid'):
