@@ -46,7 +46,7 @@ def midpoint(interval):
         return np.mean(parts)
     except:
         return np.nan
-    
+
 
 def color_bin(bin_means): 
         
@@ -71,4 +71,3 @@ def aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL):
     return agg
 
         
-

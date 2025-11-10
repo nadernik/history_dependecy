@@ -30,55 +30,61 @@ from serial_dependence_analysis import SerialDependenceAnalyzer
 from serial_dependence_analysis import fit_psychometric_curve
 import functions_Ale as fa
 
+# LOAD DATA AND PREPROCESS
 an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)  # k=1 is enough for n-1 effects
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
-# what it does
-#Loads & cleans the data (load_and_preprocess_data()).
-#Converts all angles to 0–90°.
+#Converts already angles to 0–90°.
 #Creates lagged features (so you get angle_n-1, action_n-1, etc.).
-#Builds a logistic regression model that directly uses numeric angles (continuous).
 
-# BINNING n-1 BY UNIQUE ANGLES
-
-df_processed = fa.bin_by_unique_angles(df_processed, name_new_col='bin_angle_n-1', n_groups=11, angle_col='angle_n-1', exclude_angle=45) # we have 33 unique angles excluding 45, so 11 groups of 3 angles each
-#print(type(df_processed['bin_angle_n-1'].head(10)))
-#print(f"current trial: {df_processed[['angle', 'bin_angle']].sample(10, random_state=42)}")
-#print(f"past trial:{df_processed[['angle_n-1', 'bin_angle_n-1']].sample(10, random_state=42)}")
+# BINNING n-1 BY UNIQUE ANGLES (and excluding 45°)
+df_processed = fa.bin_by_unique_angles(df_processed, name_new_col='bin_angle_n-1', n_groups=11, angle_col='angle_n-1', exclude_angle=45) 
+# we have 33 unique angles excluding 45, so 11 groups of 3 angles each
+# these are my 11 bins: 0–5°, 8–10°, 15–20°, 21–26°, 27–30°, 34–40°, 50–53°, 55–60°, 65–70°, 73–80°, 82–90
 
 # PLOTTING PSYCHOMETRIC CURVES CONDITIONED ON PREVIOUS-TRIAL ANGLE BINS
-
 
 BIN_COL   = 'bin_angle_n-1'  
 ANGLE_COL = 'angle'
 RESP_COL  = 'action'
-# Cleaning --> DROP NaNs(45°) in previous-angle bin
+HIT_COL = 'hitmiss_n-1'   # <-- not used if you don't want to filter by hits/misses 
+
+
+# Cleaning --> DROP NaNs(45°) in angle n-1 bins
 dfc = df_processed.dropna(subset=[BIN_COL]).copy()
 
-# Create a summary table per (prev-bin, current angle)
+'''
+#UNLOCK TO SEE THE EFFECTS CONTROLLED FOR PREVIOUS TRIAL HITS/MISSES
+dfc = (df_processed
+       .dropna(subset=[BIN_COL, HIT_COL])
+       .loc[lambda d:  d[HIT_COL].astype(bool)]      # keeps True / 1 # add ~ before d[HIT_COL] to keep False / 0
+       .copy())
+''' 
+
+# Create a summary table paired per (n-1_bin, current angle)
 agg = fa.aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL)
-# agg is my mini dataframe with mean, n and se for each combination of previous angle bin and current angle (only for combinations that have at least 5 trials)
+# agg is my mini dataframe with mean, n and standard error for each combination of previous angle bin and current angle (only for combinations that have at least 5 trials)
 
 # --- Color mapping ---
 bin_means = {b: fa.midpoint(b) for b in dfc[BIN_COL].unique()}
 plt.figure(figsize=(10, 7))
-# --- Prepare unique color per bin, grouped by angle family (<45° = blue, ≥45° = red)
+# --- Prepare unique color per bin, grouped by angle family (<45° = blues, >45° = reds)
 color_by_bin = fa.color_bin(bin_means)
 
 # --- Plot each previous-angle bin ---
 for i, b in enumerate(sorted(bin_means, key=lambda x: bin_means[x])):
     sub = agg[agg[BIN_COL] == b] #sub --> all rows where for ex. BIN_COL == (0,15]:
-    sub = sub.sort_values(ANGLE_COL) # apparently not necessary, I cann't notice any difference in the plot but just to be sure
+    sub = sub.sort_values(ANGLE_COL) # apparently not necessary, I can't notice any difference in the plot but just to be sure
     if sub.empty: #sub --> there are no matches for that bin (but this should have been filtered out before)
         continue
-    
+
     color = color_by_bin[b]
 
     # Dots with error bars
     plt.errorbar(sub[ANGLE_COL], sub['mean'], yerr=sub['se'],
                  fmt='o', ms=4, alpha=0.9, label=str(b), color=color)
     
-    # Fit psychometric curve using your colleague’s function
+    # Fit psychometric curve using function from serial_dependence_analysis.py
     raw = dfc[dfc[BIN_COL] == b]
     popt, ok, x_fit, y_fit = fit_psychometric_curve(
         raw[ANGLE_COL], raw[RESP_COL], min_trials=5
@@ -94,7 +100,7 @@ plt.xlim(0, 90)
 plt.ylim(0, 1)
 plt.xlabel('Current angle (deg)')
 plt.ylabel('P(action = 1)')
-plt.title('Psychometric curves conditioned on previous-trial angle')
+plt.title('Psychometric curves conditioned on previous-trial angle, only n-1 miss', fontsize=14)
 plt.legend(title='Prev angle bin', fontsize=9)
 plt.tight_layout()
 plt.show()
@@ -103,14 +109,14 @@ plt.show()
 #print(outliers[['angle', BIN_COL, 'mean', 'n']])
 
 
-# Now plot separated by modality transition
-
+# NOW PLOTS PER MODALITY TRANSITION TYPE
+# let's redifine some variables for clarity
 
 BIN_COL    = 'bin_angle_n-1'          # your previous-angle bins
 TRANS_COL  = 'mod_transition_n-1'     # e.g. 'T->V', 'V->VT', ...
 ANGLE_COL  = 'angle'
 RESP_COL   = 'action'
-MIN_N      = 5
+HIT_COL = 'hitmiss_n-1'
 
 #dfc = df_processed.dropna(subset=[BIN_COL, TRANS_COL]).copy()
 
@@ -149,7 +155,7 @@ for ax, tr in zip(axes, transitions):
         # fit psychometric curve
         raw = sub_tr[sub_tr[BIN_COL] == b]
         popt, ok, x_fit, y_fit = fit_psychometric_curve(
-            raw[ANGLE_COL], raw[RESP_COL], min_trials=MIN_N
+            raw[ANGLE_COL], raw[RESP_COL], min_trials=5
         )
         if ok:
             ax.plot(x_fit, y_fit, color=color, alpha=0.9)
@@ -166,9 +172,8 @@ for ax, tr in zip(axes, transitions):
 # --- Global figure tweaks ---
 handles, labels = ax.get_legend_handles_labels()
 fig.legend(handles, labels, title='Prev angle bin', loc='upper center',
-           ncol=8, bbox_to_anchor=(0.5, 1.00), fontsize=9)
+           ncol=8, bbox_to_anchor=(0.5, 1.08), fontsize=9)
 fig.suptitle('Psychometric curves by previous-trial angle for each modality transition', fontsize=14, y=1.04)
-#fig.tight_layout()
 plt.show()
 
 
