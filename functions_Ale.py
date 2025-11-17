@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45, min_count=100):
+def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45, min_count=5):
     """
     Bin by *unique angle values* so each bin has (nearly) the same count of distinct angles.
     Rows with angle==exclude are removed first.
@@ -57,7 +57,7 @@ def color_bin(bin_means):
         blue_bins = [b for b in bins_sorted if bin_means[b] < 45]
         red_bins  = [b for b in bins_sorted if bin_means[b] >= 45]
 
-        blues = plt.cm.Blues(np.linspace(0.25, 0.85, len(blue_bins)))
+        blues = plt.cm.Blues(np.linspace(0.85, 0.25, len(blue_bins)))
         reds  = plt.cm.Reds(np.linspace(0.25, 0.85, len(red_bins)))
 
         color_by_bin = {b: c for b, c in zip(blue_bins, blues)}
@@ -65,8 +65,14 @@ def color_bin(bin_means):
 
         return color_by_bin
 
-def aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL):
-    agg = (dfc.groupby([BIN_COL, ANGLE_COL])[RESP_COL]
+def aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL, RAT_COL=None, MOD_TRANS_COL=None):
+    grup_col = [BIN_COL, ANGLE_COL]
+    if RAT_COL is not None:
+        grup_col.insert(0, RAT_COL)
+    if MOD_TRANS_COL is not None:
+        grup_col.insert(0, MOD_TRANS_COL)
+
+    agg = (dfc.groupby(grup_col)[RESP_COL]
             .agg(mean='mean', n='size')
             .reset_index())
     agg = agg[agg['n'] >= 5]  # or 10, depending on your data
