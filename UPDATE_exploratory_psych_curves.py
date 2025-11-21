@@ -1,4 +1,4 @@
-UPDATE_exploratory_psych_curves.py
+
 '''
 SAFELY CODING: 
 

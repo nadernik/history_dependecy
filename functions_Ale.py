@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle=45, min_count=5):
+def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle= None, min_count=5):
     """
     Bin by *unique angle values* so each bin has (nearly) the same count of distinct angles.
     Rows with angle==exclude are removed first.
