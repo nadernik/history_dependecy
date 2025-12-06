@@ -14,15 +14,15 @@ def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle= N
       - 'center': numeric labels = group midpoint (mean of angles in the group)
       - 'index' : integer bin index 0..n_groups-1
     """
-
+    decision_boundary = 45
   # === COUNT OCCURRENCES OF EACH ANGLE ===
     counts = df[angle_col].value_counts()
 
     # === KEEP ONLY ANGLES THAT APPEAR AT LEAST `min_count` TIMES ===
     valid_angles = counts[counts >= min_count].index
-
     # === EXCLUDE 45° AND GET UNIQUE ANGLES ===
-    unique_angles = np.sort(df.loc[(df[angle_col].isin(valid_angles)) & (df[angle_col] != exclude_angle), angle_col].unique())
+    unique_angles = np.sort(df.loc[(df[angle_col].isin(valid_angles)) & (df[angle_col] != decision_boundary), angle_col].unique())
+
 
     # === SPLIT UNIQUE ANGLES INTO ~EQUAL-SIZED GROUPS ===
     groups = np.array_split(unique_angles, n_groups)
@@ -32,6 +32,8 @@ def bin_by_unique_angles(df, name_new_col, n_groups, angle_col, exclude_angle= N
 
     # === MAP EACH ANGLE VALUE TO ITS BIN LABEL ===
     angle_to_label = {a: labels[i] for i, g in enumerate(groups) for a in g}
+    if exclude_angle is None:
+        angle_to_label[decision_boundary] = '45°'
 
     # === CREATE NEW COLUMN WITH BIN LABEL ===
     df[name_new_col] = df[angle_col].map(angle_to_label)
@@ -55,15 +57,19 @@ def color_bin(bin_means):
         
         bins_sorted = sorted(bin_means, key=bin_means.get)
         blue_bins = [b for b in bins_sorted if bin_means[b] < 45]
-        red_bins  = [b for b in bins_sorted if bin_means[b] >= 45]
+        red_bins  = [b for b in bins_sorted if bin_means[b] > 45]
+        green_bin = [b for b in bins_sorted if bin_means[b] == 45]
 
         blues = plt.cm.Blues(np.linspace(0.85, 0.25, len(blue_bins)))
         reds  = plt.cm.Reds(np.linspace(0.25, 0.85, len(red_bins)))
 
         color_by_bin = {b: c for b, c in zip(blue_bins, blues)}
         color_by_bin.update({b: c for b, c in zip(red_bins, reds)})
+        green_color = None
+        if len(green_bin) == 1:
+            green_color = np.array([0.2, 0.8, 0.2, 1.0])
 
-        return color_by_bin
+        return color_by_bin, green_color
 
 def aggregate_data(dfc, BIN_COL, ANGLE_COL, RESP_COL, RAT_COL=None, MOD_TRANS_COL=None):
     grup_col = [BIN_COL, ANGLE_COL]
