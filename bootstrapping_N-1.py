@@ -38,6 +38,7 @@ import functions_Ale as fa
 BIN_COL_N_1     = 'bin_angle_n-1'     # previous-trial angle bin label
 BIN_COL_N       = 'bin_angle_n'       # current-trial angle bin label                        
 BIN_COL_N_MID   = 'bin_n_midpoint'    # numeric midpoint for current-trial bin (x-axis)
+ANGLE_COL       = 'angle'             # current-trial raw angle 
 RAT_COL         = 'rat'               # subject/animal ID
 ACTION_N_1      = 'action_n-1'  # previous-trial response (0/1)
 ACTION          = 'action'    # current-trial response (0/1)
@@ -49,8 +50,8 @@ an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 
-df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=6, angle_col='angle_n-1', exclude_angle=45)
-df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=6, angle_col='angle', exclude_angle=45)
+df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle=45)
+df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
 
 # Current-bin midpoints (for x-axis)
@@ -114,11 +115,12 @@ for rat in agg[RAT_COL].unique():
             samp_dataset = pd.concat([samp_r, samp_l], ignore_index=True)
 
             popt, ok, x_fit_dummy, y_fit_dummy = fit_psychometric_curve(
-                samp_dataset[BIN_COL_N_MID],
+                samp_dataset[ANGLE_COL],
                 samp_dataset[ACTION]  # action on current trial
             )
 
             if not ok:
+                print(f"Fit failed for rat {rat}, prev_bin {bin_label}, bootstrap {b}. Skipping.")
                 continue
 
             boot_results.append({
@@ -165,13 +167,13 @@ fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows),
 axes = np.atleast_1d(axes).reshape(-1)
 # plotting finale
 x_fit = np.linspace(0, 90, 200)
-color_by_bin   = fa.color_bin(bin_means_cur)
+color_by_bin, _   = fa.color_bin(bin_means_cur)
 
 for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
     #plt.figure()
     sub = summary[summary[RAT_COL] == rat]
     raw_r = dfc[dfc[RAT_COL] == rat]
-    popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[BIN_COL_N_MID],raw_r[ACTION], min_trials=5)
+    popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[ANGLE_COL],raw_r[ACTION], min_trials=5)
     if ok_r:
         ax.plot(x_fit_r, y_fit_r, color='black', alpha=0.8, ls='--')
     for _, row in sub.iterrows():
@@ -214,7 +216,7 @@ for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
                 y_low,
                 y_high,
                 color=color,
-                alpha=0.1,   # transparency
+                alpha=0.6,   # transparency
                 linewidth=0
             )
 

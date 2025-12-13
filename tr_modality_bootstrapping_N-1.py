@@ -51,8 +51,8 @@ an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 
-df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=6, angle_col='angle_n-1', exclude_angle=45)
-df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=6, angle_col='angle', exclude_angle=45)
+df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle=45)
+df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
 # --- Get unique transitions ---
 #dfc here is inherited from before so we have already added the bins, rat and bin mid points columns
@@ -133,7 +133,7 @@ for tr in transitions:
                     samp_dataset = pd.concat([samp_r, samp_l], ignore_index=True)
 
                     popt, ok, x_fit_dummy, y_fit_dummy = fit_psychometric_curve(
-                        samp_dataset[BIN_COL_N_MID],
+                        samp_dataset[ANGLE_COL],
                         samp_dataset[ACTION]  # action on current trial
                     )
 
@@ -191,7 +191,7 @@ for tr in transitions:
             #plt.figure()
             sub = summary[summary[RAT_COL] == rat]
             raw_r = dfc_tr[dfc_tr[RAT_COL] == rat]
-            popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[BIN_COL_N_MID],raw_r[ACTION], min_trials=5)
+            popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[ANGLE_COL],raw_r[ACTION], min_trials=5)
             if ok_r:
                 ax.plot(x_fit_r, y_fit_r, color='black', alpha=0.8, ls='--')
             for _, row in sub.iterrows():
@@ -234,7 +234,7 @@ for tr in transitions:
                         y_low,
                         y_high,
                         color=color,
-                        alpha=0.1,   # transparency
+                        alpha=0.5,   # transparency
                         linewidth=0
                     )
 
