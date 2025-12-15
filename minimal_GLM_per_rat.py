@@ -47,7 +47,7 @@ df_processed = an.create_lagged_features()
 
 rat_results = an.analyze_individual_rats(minimal_glm=True)  # modality: 1=touch, 2=vision, 3=vt
 
-# estrai betas per rat
+# estract betas per rat
 rows = []
 for rat_id, res in rat_results.items():
     names = res['feature_names']
@@ -68,7 +68,7 @@ x = np.arange(len(rats))
 y = beta_df['beta_prev_angle'].values
 plt.figure(figsize=(max(8, 0.6*len(beta_df)), 4))
 plt.axhline(0, color='k', ls='--', alpha=0.4)
-#plt.scatter(x, beta_df['beta_prev_angle'], c=colors, s=80)
+
 plt.bar(
     x,
     y,
@@ -97,17 +97,6 @@ for xi, yi in zip(x, y):
             fontsize=9
         )
 plt.xticks(ticks=x,labels=rats,rotation=45, ha='right')
-# vertical lines from 0 to each beta
-'''
-plt.vlines(
-    x,
-    ymin=0,
-    ymax=y,
-    colors=colors,
-    linewidth=2,
-    alpha=0.8
-)
-'''
 plt.ylabel('Beta (angle_n-1)')
 plt.xlabel('Rat')
 plt.title('Betas per rat: previous-trial angle (angle_n-1)')
