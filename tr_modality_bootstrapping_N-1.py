@@ -91,10 +91,6 @@ for tr in transitions:
 
         print(f'transition: {tr},\ntable:\n{worst}')
 
-        # min number fo samples to plot, per rat\bin\side --> at least 25
-        # implement this cut off in the bootstrapping script later
-        # how do I condition of transition here?, another loop I guess
-        # CHECK THAT THE CODE IS CORRECT BC I have some weird stuff in the output.
 
         n_bootstraps = 1000
         boot_results = []
@@ -119,11 +115,6 @@ for tr in transitions:
                 # split in "right" and "left" according to ACTION_N_1
                 right_trials = df_subset[df_subset[ACTION_N_1] == 1]
                 left_trials  = df_subset[df_subset[ACTION_N_1] == 0]
-                
-                # if data are missing in one side, skip this rat/bin combo
-                #if (len(right_trials) == 0) or (len(left_trials) == 0):
-                    #print(f"Skipping rat {rat}, prev_bin {bin_label}: not enough trials on at least one side.")
-                    #continue
                 
                 for b in range(n_bootstraps):
                     # resample with replacement
@@ -188,14 +179,14 @@ for tr in transitions:
         color_by_bin, _   = fa.color_bin(bin_means_cur)
 
         for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
-            #plt.figure()
+            
             sub = summary[summary[RAT_COL] == rat]
             raw_r = dfc_tr[dfc_tr[RAT_COL] == rat]
             popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[ANGLE_COL],raw_r[ACTION], min_trials=5)
             if ok_r:
                 ax.plot(x_fit_r, y_fit_r, color='black', alpha=0.8, ls='--')
             for _, row in sub.iterrows():
-                #raw_r_b= dfc[(dfc[RAT_COL] == rat) & (dfc[BIN_COL_N_1] == row['prev_bin'])]
+                
 
                 y_fit = cumulative_gaussian_lapse(
                     x_fit,
@@ -209,7 +200,7 @@ for tr in transitions:
                 color = color_by_bin[prev_bin]
 
                 # -------------------------
-                # 2) CURVE BOOTSTRAP → CI
+                # 2) CURVE BOOTSTRAP → pointwise CI
                 # -------------------------
                 # all bootstraps of this rat/prev_bin combination
                 boot_sub = boot_df[(boot_df[RAT_COL] == rat) &
@@ -240,19 +231,7 @@ for tr in transitions:
 
                 label = f"prev_bin {row['prev_bin']}"
                 ax.plot(x_fit, y_fit, color=color, alpha=0.9, label=label)
-                
-                #plt.plot(x_fit, y_fit, label=label, color = color)
-                #popt_r_b, ok_r_b, x_fit_r_b, y_fit_r_b = fit_psychometric_curve(raw_r_b[BIN_COL_N_MID],raw_r_b[ACTION], min_trials=5)
-                #if ok_r_b:
-                    #ax.plot(x_fit_r_b, y_fit_r_b, color='black', alpha=0.3, ls='--')
             
-            '''
-            plt.xlabel("Angle (bin midpoint)")
-            plt.ylabel("P(right)")
-            plt.legend()
-            plt.title("Bootstrap psychometric curves by rat and previous bin")
-            plt.show()
-            '''
             # decorations
             ax.axhline(0.5, color='k', ls='--', alpha=0.4)
             ax.axvline(45,  color='k', ls='--', alpha=0.4)
