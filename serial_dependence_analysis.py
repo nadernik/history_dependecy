@@ -160,7 +160,22 @@ def cumulative_gaussian_lapse(x, mu, sigma, gamma, lambda_param):
     # Direct conversion from MATLAB using scipy.special.erf
     y = gamma + (1 - gamma - lambda_param) * (0.5 * (1 + erf((x - mu) / np.sqrt(2 * sigma**2))))
     return y
-
+#-----------------------------------------------------------------------------
+# I added this function without lapse rate for minimal glm fitting
+def cumulative_gaussian_fixed_lapse(x, mu, sigma, gamma = 0.02, lambda_param = 0.02):
+    """Cumulative Gaussian WITH lapse rate - matches MATLAB cumulativegaussianLapse.m"""
+    # Ensure inputs are numeric arrays
+    x = np.asarray(x, dtype=float)
+    mu = float(mu)
+    sigma = float(sigma)
+    gamma = float(gamma)
+    lambda_param = float(lambda_param)
+    # MATLAB: y=gamma+(1-gamma-lambda)*(1/2.*(1+erf((x-mu)./sqrt(2*sigma^2))));
+    # Direct conversion from MATLAB using scipy.special.erf
+    y = gamma + (1 - gamma - lambda_param) * (0.5 * (1 + erf((x - mu) / np.sqrt(2 * sigma**2))))
+    return y
+# mia nueva 
+#-----------------------------------------------------------------------------
 def sigma_error(p, n):
     """Binomial confidence interval"""
     # Ensure inputs are numeric
@@ -170,7 +185,7 @@ def sigma_error(p, n):
         return 0
     return np.sqrt(1/n * (p * (1 - p)))
 
-def fit_psychometric_curve(angles, responses, min_trials=5):
+def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=False): # CHANGED  minimal_curvefit=False
     """
     Fit cumulative Gaussian psychometric curve to data
     
@@ -205,23 +220,39 @@ def fit_psychometric_curve(angles, responses, min_trials=5):
     
     valid_angles = np.array(valid_angles)
     performance = np.array(performance)
-    
+    import traceback
     try:
         # Initial parameters and bounds
-        p0 = [45, 15, 0, 0]  # [mu, sigma, gamma, lambda]
-        bounds = ([20, 5, 0, 0], [70, 50, 0.3, 0.3])
+        if minimal_curvefit:
+            p0 = [45, 15]  # [mu, sigma]
+            bounds = ([20, 5], [70, 50])
+            # Fit the curve
+            popt, _ = curve_fit(cumulative_gaussian_fixed_lapse, valid_angles, performance,
+                            p0=p0, bounds=bounds, maxfev=1000)
+            # Generate smooth curve for plotting
+            x_fit = np.linspace(0, 90, 100)
+            y_fit = cumulative_gaussian_fixed_lapse(x_fit, *popt)
+
+        else: 
+            p0 = [45, 15, 0, 0]  # [mu, sigma, gamma, lambda]
+            bounds = ([20, 5, 0, 0], [70, 50, 0.3, 0.3])
+            # Fit the curve
+            popt, _ = curve_fit(cumulative_gaussian_lapse, valid_angles, performance,
+                            p0=p0, bounds=bounds, maxfev=1000)
         
-        # Fit the curve
-        popt, _ = curve_fit(cumulative_gaussian_lapse, valid_angles, performance,
-                           p0=p0, bounds=bounds, maxfev=1000)
-        
-        # Generate smooth curve for plotting
-        x_fit = np.linspace(0, 90, 100)
-        y_fit = cumulative_gaussian_lapse(x_fit, *popt)
+            # Generate smooth curve for plotting
+            x_fit = np.linspace(0, 90, 100)
+            y_fit = cumulative_gaussian_lapse(x_fit, *popt)
         
         return popt, True, x_fit, y_fit
         
     except Exception as e:
+        print("FIT FAILED:", repr(e))
+        traceback.print_exc()
+        print("N valid angles:", len(valid_angles))
+        print("valid_angles:", valid_angles)
+        print("performance:", performance)
+
         return None, False, None, None
 
 class SerialDependenceAnalyzer:
@@ -981,8 +1012,12 @@ class SerialDependenceAnalyzer:
                     ax.plot(valid_angles, performance, 'o', color=color, 
                            markersize=4, alpha=0.6)
     
-    def analyze_individual_rats(self):
+    def analyze_individual_rats(self, minimal_glm=False, modality=None, transition=None, mod_tr=None):
         """Analyze each rat individually"""
+        '''
+        minimal glm implements a reduced model with only angle and angle_n-1 as predictors
+        mod_tr: if specified as a string like 'V->VT', filters data to only trials with that modality transition
+        '''
         print(f"\n=== INDIVIDUAL RAT ANALYSIS ===")
         
         if self.df_processed is None:
@@ -997,7 +1032,11 @@ class SerialDependenceAnalyzer:
         for rat_id in rats:
             print(f"\nAnalyzing Rat {rat_id}...")
             rat_data = self.df_processed[self.df_processed['rat'] == rat_id].copy()
-            
+            # --- NEW: filter by modality transition (prev_mod -> current_mod) ---
+            if mod_tr is not None:
+                rat_data = rat_data[rat_data['mod_transition_n-1'] == mod_tr].copy()
+
+                
             if len(rat_data) < 50:  # Minimum data requirement
                 print(f"  Insufficient data for Rat {rat_id} ({len(rat_data)} trials)")
                 continue
@@ -1010,28 +1049,35 @@ class SerialDependenceAnalyzer:
                 # Current trial features
                 features.append(rat_data['angle'].values)
                 feature_names.append('angle')
+
+                if minimal_glm:
+                    features.append(rat_data['angle_n-1'].values)
+                    feature_names.append('angle_n-1')
+                else:
+                    # existing full model (mod, action_n-1, hitmiss, etc.)
+
                 
-                # One-hot encode current modality
-                for mod in [1, 2, 3]:
-                    mod_feature = (rat_data['mod'] == mod).astype(int)
-                    features.append(mod_feature.values)
-                    feature_names.append(f'mod_{mod}')
-                
-                # History features
-                for i in range(1, self.k + 1):
-                    features.append(rat_data[f'angle_n-{i}'].values)
-                    feature_names.append(f'angle_n-{i}')
+                    # One-hot encode current modality
+                    for mod in [1, 2, 3]:
+                        mod_feature = (rat_data['mod'] == mod).astype(int)
+                        features.append(mod_feature.values)
+                        feature_names.append(f'mod_{mod}')
                     
-                    features.append(rat_data[f'action_n-{i}'].values)
-                    feature_names.append(f'action_n-{i}')
-                    
-                    features.append(rat_data[f'hitmiss_n-{i}'].values)
-                    feature_names.append(f'hitmiss_n-{i}')
-                    
-                    # Add difficulty features if available
-                    if f'difficulty_n-{i}' in rat_data.columns:
-                        features.append(rat_data[f'difficulty_n-{i}'].values)
-                        feature_names.append(f'difficulty_n-{i}')
+                    # History features
+                    for i in range(1, self.k + 1):
+                        features.append(rat_data[f'angle_n-{i}'].values)
+                        feature_names.append(f'angle_n-{i}')
+                        
+                        features.append(rat_data[f'action_n-{i}'].values)
+                        feature_names.append(f'action_n-{i}')
+                        
+                        features.append(rat_data[f'hitmiss_n-{i}'].values)
+                        feature_names.append(f'hitmiss_n-{i}')
+                        
+                        # Add difficulty features if available
+                        if f'difficulty_n-{i}' in rat_data.columns:
+                            features.append(rat_data[f'difficulty_n-{i}'].values)
+                            feature_names.append(f'difficulty_n-{i}')
                 
                 # Stack features
                 X = np.column_stack(features)
