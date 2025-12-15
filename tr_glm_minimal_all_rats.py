@@ -58,7 +58,7 @@ axes = np.atleast_1d(axes).reshape(-1)
 for ax, tr in zip(axes, transitions):
     rat_results = an.analyze_individual_rats(minimal_glm=True, mod_tr=tr)  # modality: 1=touch, 2=vision, 3=vt
 
-    # estrai betas per rat
+    # estract betas per rat
     rows = []
     for rat_id, res in rat_results.items():
         names = res['feature_names']
@@ -71,7 +71,7 @@ for ax, tr in zip(axes, transitions):
     # store betas in dataframe
     beta_df = pd.DataFrame(rows, columns=['rat', 'beta_prev_angle']).sort_values('rat')
 
-# colori per segno
+    # colori per segno
     colors = np.where(beta_df['beta_prev_angle'] > 0, 'red',
             np.where(beta_df['beta_prev_angle'] < 0, 'blue', 'gray'))
 
@@ -79,18 +79,14 @@ for ax, tr in zip(axes, transitions):
     x = np.arange(len(rats))
     y = beta_df['beta_prev_angle'].values
     ax.axhline(0, color='k', ls='--', alpha=0.4)
-    # show x tick labels only on bottom row
-
-    #plt.scatter(x, beta_df['beta_prev_angle'], c=colors, s=80)
+   
     ax.bar(
         x,
         y,
         color=colors,
         width=0.6
     )
-    # add labels on top (matplotlib 3.4+)
-   
-    
+
 
     ylim = ax.get_ylim()
     yrange = ylim[1] - ylim[0]
@@ -125,26 +121,16 @@ for ax, tr in zip(axes, transitions):
         ax.set_xlabel('')
     else:
         ax.set_xticklabels(rats, rotation=45, ha='right')
-    #ax.xticks(ticks=x,labels=rats,rotation=45, ha='right')
-    # vertical lines from 0 to each beta
-    '''
-    plt.vlines(
-        x,
-        ymin=0,
-        ymax=y,
-        colors=colors,
-        linewidth=2,
-        alpha=0.8
-    )
-    '''
-    #I want to select only the first coloumn of subplots, y axis label only on the first column
+  
+
+    
     if ax not in axes[::ncols]:
         ax.set_ylabel('')
     else:
         ax.set_ylabel('Beta (angle_n-1)')
 
     ax.set_title(f'{tr} All rats', fontsize=10)
-    #ax.set_xlabel('Rat')
+    
     
 
     fig.subplots_adjust(
@@ -154,9 +140,6 @@ for ax, tr in zip(axes, transitions):
     hspace=0.35
 )
 
-# Source - https://stackoverflow.com/a
-# Posted by Anurag Reddy
-# Retrieved 2025-12-15, License - CC BY-SA 4.0
 
 
 plt.show()
