@@ -28,6 +28,8 @@ Usage:
     analyzer.plot_specific_rat(rat_id=2)
 """
 
+from pyexpat import features
+import traceback
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -44,7 +46,13 @@ from scipy.special import erf
 from scipy.optimize import curve_fit
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, GroupKFold
+# imports ALE 
+from scipy.optimize import minimize
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+
+
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -523,12 +531,15 @@ class SerialDependenceAnalyzer:
             df_lag['difficulty'] = np.abs(df_lag['angle'] - 45.0)
             print(f"Added perceptual difficulty feature (distance from 45°)")
             print(f"Difficulty range: {df_lag['difficulty'].min():.1f}° - {df_lag['difficulty'].max():.1f}°")
-            
+            # Create hit/miss binary features for modeling
+            df_lag['hit'] = df_lag['hitmiss'].astype(int)
+            df_lag['miss'] = (1 - df_lag['hit']).astype(int)
+
             # Create lagged features
             for i in range(1, self.k + 1):
                 print(f"Creating lag {i} features...")
                 
-                lag_columns = ['action', 'angle', 'hitmiss', 'mod', 'difficulty']
+                lag_columns = ['action', 'angle', 'hitmiss', 'mod', 'difficulty', 'hit', 'miss']
                 
                 for col in lag_columns:
                     new_col = f"{col}_n-{i}"
@@ -1012,7 +1023,7 @@ class SerialDependenceAnalyzer:
                     ax.plot(valid_angles, performance, 'o', color=color, 
                            markersize=4, alpha=0.6)
     
-    def analyze_individual_rats(self, minimal_glm=False, modality=None, transition=None, mod_tr=None):
+    def analyze_individual_rats(self, minimal_glm=False, mod_tr=None): # modality=None, transition=None
         """Analyze each rat individually"""
         '''
         minimal glm implements a reduced model with only angle and angle_n-1 as predictors
@@ -1121,7 +1132,421 @@ class SerialDependenceAnalyzer:
         
         print(f"\nSuccessfully analyzed {len(rat_results)} rats")
         return rat_results
+
+# this is new from the 2024-06 update, the next two function implement 1) cross-validation and 2) a modified version of your analyze_individual_rats, which takes features as input to create different models.
+    def cross_validate(self, rat_data, cont_values, bin_values, N_SPLITS=5, binary=False):
+            """Perform cross-validated logistic regression for a single rat with these imports
+            from sklearn.pipeline import Pipeline
+            from sklearn.compose import ColumnTransformer
+            from sklearn.model_selection import GroupKFold, cross_val_score"""
+            
+            # Build X and track which columns are continuous/binary
+            X_cont= np.column_stack([f for f in cont_values ])
+            if binary:
+                X_bin= np.column_stack([f for f in bin_values ])
+            
+            if binary:
+                X = np.column_stack([X_cont, X_bin])
+            else:
+                X = X_cont
+                
+            y = rat_data['action'].values
+            groups = rat_data['date'].values   # this ensures that all trials from the same session are in the same fold and there is no leakfrom training to leak data
+
+            n_cont = X_cont.shape[1]
+            cont_idx = list(range(n_cont))
+            bin_idx  = list(range(n_cont, X.shape[1]))
+
+            preprocess = ColumnTransformer(
+                transformers=[
+                    ("cont", StandardScaler(), cont_idx),
+                    ("bin", "passthrough", bin_idx),
+                ],
+                remainder="drop"
+            )
+
+            pipe = Pipeline([
+                ("preprocess", preprocess),
+                ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=1000, random_state=42)),
+            ])
+
+            cv = GroupKFold(n_splits=N_SPLITS)
+            scores = cross_val_score(pipe, X, y, cv=cv, groups=groups)
+            
+            scores_dict = {f'fold_{i}': scores[i] for i in range(len(scores))} | {'score_mean': scores.mean(), 'score_std': scores.std(), 'rat_id': rat_data['rat'].iloc[0]}
+
+            return scores_dict
+
+            
+
+
+
+    def analyze_individual_rats_ale(self, df_processed = None,  features_keys=None, k=None):
+        """Analyze each rat individually"""
+        '''
+        
+        '''
+        print(f"\n=== INDIVIDUAL RAT ANALYSIS ===")
+        
+        rats = sorted(df_processed['rat'].unique())
+        rat_results = {}
+        binary = False
+        print(f"Analyzing {len(rats)} rats individually...")
+        
+        for rat_id in rats:
+            print(f"\nAnalyzing Rat {rat_id}...")
+            rat_data = df_processed[df_processed['rat'] == rat_id].copy()
+  
+            if len(rat_data) < 50:  # Minimum data requirement
+                print(f"  Insufficient data for Rat {rat_id} ({len(rat_data)} trials)")
+                continue
+            
+            try:
+                # Prepare features for this rat
+                cont_values = [] # list to hold continuous features (angle, difficulty, etc.)
+                bin_values = [] # list to hold binary features (previous actions, hit/miss, etc.)
+                cont_names = []
+                bin_names = []
+                
+                # Current trial features, laways include angle
+                cont_values.append(rat_data['angle'].values)
+                cont_names.append('angle')
+                
+                # History features
+                for i in range(1, self.k + 1):
+                    if f'angle_n-{i}' in features_keys:
+                        cont_values.append(rat_data[f'angle_n-{i}'].values.astype(float))
+                        cont_names.append(f'angle_n-{i}')
+                    if f'action_n-{i}' in features_keys:
+                        bin_values.append(rat_data[f'action_n-{i}'].values.astype(float))
+                        bin_names.append(f'action_n-{i}')
+                    if f'success_n-{i}' in features_keys: 
+                        bin_values.append(rat_data[f'success_n-{i}'].values.astype(int))
+                        bin_names.append(f'success_n-{i}')  
+                    if f'failure_n-{i}' in features_keys:
+                        bin_values.append(rat_data[f'failure_n-{i}'].values.astype(int))
+                        bin_names.append(f'failure_n-{i}')
+                if len(bin_names) == 0:
+                    binary = False # a flag to indicate whether we have binary features or not, 
+                    #which will determine how we build the feature matrix and scale it (I scale only continuous features)
+                else:
+                    binary = True
+
+            
+                # Stack features
+                # Separate continuous and binary features
+
+                X_cont= np.column_stack([f for f in cont_values ])
+                if binary:
+                    X_bin= np.column_stack([f for f in bin_values ])
+                
+                scaler = StandardScaler()
+                X_cont_scaled = scaler.fit_transform(X_cont)
+                if binary:
+                    X = np.column_stack([X_cont_scaled, X_bin])
+                else:                    
+                    X = X_cont_scaled
+                    
+                y = rat_data['action'].values
+                
+                # Fit individual model
+                model = LogisticRegression(
+                    penalty='l2',
+                    C=1.0,
+                    max_iter=1000,
+                    random_state=42
+                )
+                
+                model.fit(X, y)
+                
+                # Calculate training metrics
+                train_accuracy = model.score(X, y)
+
+                # Calculate cross-validated accuracy
+                scores_df = self.cross_validate(rat_data, cont_values, bin_values, N_SPLITS=5, binary=binary)
+                features_names = cont_names + bin_names if binary else cont_names
+                # Store results
+                rat_results[rat_id] = {
+                    'data': rat_data,
+                    'model': model,
+                    'scaler': scaler,
+                    'feature_names': features_names,
+                    'train_accuracy': train_accuracy,
+                    'n_trials': len(rat_data),
+                    'coefficients': model.coef_[0],
+                    'X': X,
+                    'y': y,
+                    'X_scaled&bin': X,
+                    'cross_validation_scores': scores_df
+                }
+                
+                print(f"  Rat {rat_id}: {len(rat_data)} trials, accuracy = {train_accuracy:.3f}")
+                
+            except Exception as e:
+                
+                print(traceback.format_exc())
+
+                print(f"  Error analyzing Rat {rat_id}: {e}")
+        
+        print(f"\nSuccessfully analyzed {len(rat_results)} rats")
+        return rat_results
     
+    
+# ---- START NEW METHOD FOR INDIVIDUAL RAT PLOTTING ----
+
+    import numpy as np
+    from scipy.optimize import minimize
+    from sklearn.preprocessing import StandardScaler
+
+    # -----------------------------
+    # Helper functions (stable)
+    # -----------------------------
+    @staticmethod
+    def _sigmoid(x):
+        x = np.clip(x, -60, 60)
+        return 1.0 / (1.0 + np.exp(-x))
+    @staticmethod
+    def _softplus(x):
+        x = np.clip(x, -60, 60)
+        return np.log1p(np.exp(x))
+
+    def _unpack_params(self, theta, n_beta):
+        """
+        theta = [beta..., u, v]
+        u,v are unconstrained reals; mapped to gamma, lambda in (0,1), gamma+lambda<1.
+        """
+        beta = theta[:n_beta]
+        u, v = theta[n_beta], theta[n_beta + 1]
+
+        a = self._softplus(u)
+        b = self._softplus(v)
+        denom = 1.0 + a + b
+        gamma = a / denom
+        lambd = b / denom
+        return beta, gamma, lambd
+
+    def _neg_logpost(self, theta, X, y, lapse_penalty=200.0):
+        """
+        Toso-style objective:
+        NLL + 200*(gamma^8 + lambda^8)
+        """
+        n_beta = X.shape[1]
+        beta, gamma, lambd = self._unpack_params(theta, n_beta)
+
+        eta = X @ beta
+        p = gamma + (1.0 - gamma - lambd) * self._sigmoid(eta)
+
+        eps = 1e-12
+        p = np.clip(p, eps, 1 - eps) # why should probabilities be clipped? to avoid log(0)
+
+        nll = -np.sum(y * np.log(p) + (1 - y) * np.log(1 - p)) # My loss is a BCE one but here I need to decide if I want to normalize it by number of samples or not
+        pen = lapse_penalty * (gamma**8 + lambd**8)
+        return nll + pen
+    
+    def _neg_loglik(self, theta, X, y):
+
+        """
+        Pure negative log-likelihood (no lapse penalty). for model comparison.
+        """
+        n_beta = X.shape[1]
+        beta, gamma, lambd = self._unpack_params(theta, n_beta)
+
+        eta = X @ beta
+        p = gamma + (1.0 - gamma - lambd) * self._sigmoid(eta)
+
+        eps = 1e-12
+        p = np.clip(p, eps, 1 - eps) # why should probabilities be clipped? to avoid log(0)
+
+        nll = -np.sum(y * np.log(p) + (1 - y) * np.log(1 - p)) # My loss is a BCE one but here I need to decide if I want to normalize it by number of samples or not
+        
+        return nll
+
+    def _fit_lapse_glm(self, X, y, lapse_penalty=200.0, max_iter=4000):
+        """
+        Fit beta + lapse params gamma/lambda with L-BFGS-B.
+        """
+        X = np.asarray(X, float)
+        y = np.asarray(y, int)
+
+        n_beta = X.shape[1]
+        theta0 = np.zeros(n_beta + 2) # why plus 2? because of gamma and lambda
+
+        # initialize lapses small (~1–2% each) and the rest of parameters at 0, why? because of the penalty that will push them towards 0, so we want to start them at a small value to avoid getting stuck at 0
+        theta0[n_beta:] = -4.0
+
+        res = minimize(
+            self._neg_logpost,
+            theta0,
+            args=(X, y, lapse_penalty),
+            method="L-BFGS-B",
+            options={"maxiter": max_iter}
+        )
+
+        # Pure data-fit metrics (no penalty)
+        nll = self._neg_loglik(res.x, X, y)
+        ll = -nll
+        n = len(y)
+
+        beta, gamma, lambd = self._unpack_params(res.x, n_beta)
+        return {"beta": beta, "gamma": gamma, "lambda": lambd, "opt": res, 
+        "nll": nll,
+        "ll": ll,
+        "nll_per_trial": nll / n,
+        "ll_per_trial": ll / n,
+        "n": n}
+
+    # -----------------------------
+    # Main method: one per rat
+    # -----------------------------
+    def _fit_toso_lapse_for_rat_df(
+    self,
+    rat_df,
+    min_trials=200,
+    lapse_penalty=200.0,
+    max_iter=4000,
+    scaler=None,
+    cont_cols=None,
+    choice_cols=None,
+    out_cols=None
+    ):
+        #number of history lags
+        k = int(self.k)
+        # set the current trial features 
+        # and lagged features
+        needed = ["action", "angle"]
+        for lag in range(1, k + 1):
+            needed += [f"angle_n-{lag}", f"action_n-{lag}", f"hitmiss_n-{lag}"]
+
+        existing = [c for c in needed if c in rat_df.columns] # more or less a filter to see if coloumn in needed matches the coloumn in rat_df
+         # drop rows with NaN in any of the needed columns
+        print(f"Before dropping NaNs, {len(rat_df)} trials available for fitting.")
+        rat_df = rat_df.dropna(subset=existing)
+        print(f"After dropping NaNs, {len(rat_df)} trials remain for fitting.")
+
+        if len(rat_df) < min_trials:
+            return None
+
+        y = rat_df["action"].astype(int).to_numpy() 
+
+        if cont_cols is None:
+            cont_cols = ["angle"] + [f"angle_n-{lag}" for lag in range(1, k + 1) if f"angle_n-{lag}" in rat_df.columns]
+        
+        X_cont = rat_df[cont_cols].astype(float).to_numpy() 
+
+        if scaler is None:
+            scaler = StandardScaler().fit(X_cont) # how does this work since X_cont has many coloumns and it is changing for every rat? it is inserted in a loop of rats later on
+
+        X_cont_z = scaler.transform(X_cont)
+        if choice_cols is None:
+            choice_cols = [f"action_n-{lag}" for lag in range(1, k + 1) if f"action_n-{lag}" in rat_df.columns]
+        X_choice = rat_df[choice_cols].astype(int).to_numpy()
+        X_choice_pm = 2 * X_choice - 1
+
+        if out_cols is None:
+            out_cols = [f"hitmiss_n-{lag}" for lag in range(1, k + 1) if f"hitmiss_n-{lag}" in rat_df.columns]
+        X_out = rat_df[out_cols].astype(int).to_numpy().astype(float)
+
+        intercept = np.ones((len(rat_df), 1), dtype=float)
+        X = np.hstack([intercept, X_cont_z, X_choice_pm.astype(float), X_out])
+
+        feature_names = ["intercept"] + cont_cols + choice_cols + out_cols
+
+        fit = self._fit_lapse_glm(X, y, lapse_penalty=lapse_penalty, max_iter=max_iter)
+        print(fit["opt"].message)
+
+        return {
+            "beta": fit["beta"],
+            "gamma": fit["gamma"],
+            "lambda": fit["lambda"],
+            "feature_names": feature_names,
+            "n_trials": len(rat_df),
+            "opt_success": bool(fit["opt"].success), # boolean indicating if optimization succeeded
+            "opt_message": str(fit["opt"].message), # message that explains the outcome of the optimization in human-readable form
+            "scaler": scaler,
+            "cont_cols": cont_cols,
+            "choice_cols": choice_cols,
+            "out_cols": out_cols,
+            "nll": fit["nll"],
+            "ll": fit["ll"],
+            "nll_per_trial": fit["nll_per_trial"],
+            "ll_per_trial": fit["ll_per_trial"],
+            "n": fit["n"]
+        }
+    
+    def nested_angle_lags(self, rat_df, K=5, lapse_penalty=200.0, max_iter=4000, scaler=None, min_trials=200):
+    # fixed controls
+        choice_cols = [f"action_n-{lag}" for lag in range(1, K+1) if f"action_n-{lag}" in rat_df.columns]
+        out_cols    = [f"hitmiss_n-{lag}" for lag in range(1, K+1) if f"hitmiss_n-{lag}" in rat_df.columns]
+
+        # -----------------------------
+        # Define MAX continuous cols (L = K) and FIX trial set
+        # -----------------------------
+        cont_cols_max = ["angle"] + [f"angle_n-{lag}" for lag in range(1, K+1) if f"angle_n-{lag}" in rat_df.columns]
+
+        used_cols_max = ["action"] + cont_cols_max + choice_cols + out_cols
+        used_cols_max = [c for c in used_cols_max if c in rat_df.columns]
+        rat_df_fixed = rat_df.dropna(subset=used_cols_max).copy()
+
+        if len(rat_df_fixed) < min_trials:
+            return [{"rat": rat_df["rat"].iloc[0], "L": None, "success": False, "llpt": None, "dllpt": None, "n": len(rat_df_fixed)}]
+
+        # -----------------------------
+        # Fit scaler ONCE (if not provided), on the fixed trial set + max cont cols
+        # -----------------------------
+
+
+        rows = []
+        prev = None
+        rat_id = rat_df["rat"].iloc[0]
+        for L in range(0, K+1):
+            cont_cols = ["angle"] + [f"angle_n-{lag}" for lag in range(1, L+1) if f"angle_n-{lag}" in rat_df.columns]
+
+            res = self._fit_toso_lapse_for_rat_df(
+                rat_df_fixed,
+                min_trials=min_trials,
+                lapse_penalty=lapse_penalty,
+                max_iter=max_iter,
+                scaler=None,
+                cont_cols=cont_cols,
+                choice_cols=choice_cols,
+                out_cols=out_cols
+            )
+            if res is None or not res["opt_success"]:
+                rows.append({"L": L, "success": False, "llpt": None, "dllpt": None, "n": None})
+                continue
+
+            llpt = res["ll_per_trial"]
+            dllpt = None if prev is None else (llpt - prev)
+
+            rows.append({"rat": rat_id, "L": L, "success": True, "llpt": llpt, "dllpt": dllpt, "n": res["n_trials"]})
+            prev = llpt
+
+        return rows
+
+    
+    def analyze_individual_rats_toso_lapse(self, min_trials=200, lapse_penalty=200.0, max_iter=4000):
+        if self.df_processed is None:
+            return {}
+
+        df = self.df_processed
+        rats = sorted(df["rat"].unique())
+        results = {}
+
+        for rat_id in rats:
+            rat_df = df[df["rat"] == rat_id].copy()
+            res = self._fit_toso_lapse_for_rat_df(
+                rat_df,
+                min_trials=min_trials,
+                lapse_penalty=lapse_penalty,
+                max_iter=max_iter,
+            )
+            if res is not None:
+                results[rat_id] = res
+
+        return results # so this returns a dictionary with rat_id as key and the fit results as value, that are also in a dictionary format
+
+# ---- END NEW METHOD FOR INDIVIDUAL RAT PLOTTING ----    
+
     def plot_individual_rat_results(self, rat_results=None, max_rats_per_figure=6):
         """Create detailed plots for each rat"""
         print(f"\n=== INDIVIDUAL RAT VISUALIZATION ===")
