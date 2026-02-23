@@ -1220,12 +1220,12 @@ class SerialDependenceAnalyzer:
                     if f'action_n-{i}' in features_keys:
                         bin_values.append(rat_data[f'action_n-{i}'].values.astype(float))
                         bin_names.append(f'action_n-{i}')
-                    if f'success_n-{i}' in features_keys: 
-                        bin_values.append(rat_data[f'success_n-{i}'].values.astype(int))
-                        bin_names.append(f'success_n-{i}')  
-                    if f'failure_n-{i}' in features_keys:
-                        bin_values.append(rat_data[f'failure_n-{i}'].values.astype(int))
-                        bin_names.append(f'failure_n-{i}')
+                    if f'angle_hit_n-{i}' in features_keys: 
+                        bin_values.append(rat_data[f'angle_hit_n-{i}'].values.astype(float))
+                        bin_names.append(f'angle_hit_n-{i}')  
+                    if f'angle_miss_n-{i}' in features_keys:
+                        bin_values.append(rat_data[f'angle_miss_n-{i}'].values.astype(float))
+                        bin_names.append(f'angle_miss_n-{i}')
                 if len(bin_names) == 0:
                     binary = False # a flag to indicate whether we have binary features or not, 
                     #which will determine how we build the feature matrix and scale it (I scale only continuous features)
@@ -1239,13 +1239,31 @@ class SerialDependenceAnalyzer:
                 X_cont= np.column_stack([f for f in cont_values ])
                 if binary:
                     X_bin= np.column_stack([f for f in bin_values ])
-                
+                # --------------------------------
+                # scale only continuous features, leave binary features as they are +-1\0
+                '''
                 scaler = StandardScaler()
                 X_cont_scaled = scaler.fit_transform(X_cont)
                 if binary:
                     X = np.column_stack([X_cont_scaled, X_bin])
                 else:                    
                     X = X_cont_scaled
+                '''
+                # --------------------------------
+                # scale all
+                
+                if binary:
+                    X = np.column_stack([X_cont, X_bin])
+                    print(f"rat {rat_id}, before scaling, feature names {cont_names + bin_names}")
+                else:
+                    X = X_cont
+                    print(f"rat {rat_id}, before scaling, feature names {cont_names}")
+                scaler = StandardScaler()
+                X_scaled = scaler.fit_transform(X)
+
+                X = X_scaled
+                
+                # --------------------------------
                     
                 y = rat_data['action'].values
                 
@@ -1261,10 +1279,13 @@ class SerialDependenceAnalyzer:
                 
                 # Calculate training metrics
                 train_accuracy = model.score(X, y)
+                # 
+                
 
                 # Calculate cross-validated accuracy
                 scores_df = self.cross_validate(rat_data, cont_values, bin_values, N_SPLITS=5, binary=binary)
                 features_names = cont_names + bin_names if binary else cont_names
+                #print(f"rat {rat_id}, feature names {features_names} model.intercept_ = {model.intercept_}")
                 # Store results
                 rat_results[rat_id] = {
                     'data': rat_data,
