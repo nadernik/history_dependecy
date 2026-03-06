@@ -260,10 +260,6 @@ def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=Fal
                 x_fit = np.linspace(-45, 45, 100)
                 y_fit = cumulative_gaussian_lapse(x_fit, *popt)
             else:
-            # Generate smooth curve for plotting
-                x_fit = np.linspace(-45, 45, 200)
-                y_fit = cumulative_gaussian_lapse(x_fit, *popt)
-            else:
                 x_fit = np.linspace(0, 90, 100)
                 y_fit = cumulative_gaussian_lapse(x_fit, *popt)
         
