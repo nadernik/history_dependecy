@@ -36,17 +36,7 @@ print(f"angle n-1 distribution:\n{dfc[ANGLE_N1_COL].value_counts()}")
 
 # datasets (only 45 used below; 40/50 are just for your sanity checks)
 dfc_45 = dfc[(dfc[ANGLE_N1_COL] == BOUNDARY_ANGLE) & (dfc[HITMISS_N1_COL] == 1)].copy()
-dfc_40 = dfc[dfc[ANGLE_N1_COL] == 40].copy()
-dfc_50 = dfc[dfc[ANGLE_N1_COL] == 50].copy()
-print(f" per rat angle distribution: \n {dfc_45.groupby([RAT_COL, ANGLE_COL]).size()}")
-'''
-print("number of trials per rat and previous action for 45° dataset:\n",
-      dfc_45.groupby([RAT_COL, ACTION_N1_COL]).size())
-print("number of trials per rat and previous action for 40° dataset:\n",
-      dfc_40.groupby([RAT_COL, ACTION_N1_COL]).size())
-print("number of trials per rat and previous action for 50° dataset:\n",
-      dfc_50.groupby([RAT_COL, ACTION_N1_COL]).size())
-'''
+
 # =============================
 # BOOTSTRAP: balance prev-action groups within each rat, fit curves on trial n
 # =============================
@@ -55,7 +45,7 @@ boot_rows = []
 rats = sorted(dfc_45[RAT_COL].unique())
 
 for rat in rats:
-    rat_df = dfc_40[dfc_40[RAT_COL] == rat]
+    rat_df = dfc_45[dfc_45[RAT_COL] == rat]
 
     g0 = rat_df[rat_df[ACTION_N1_COL] == 0]
     g1 = rat_df[rat_df[ACTION_N1_COL] == 1]
@@ -136,8 +126,8 @@ x_grid = np.linspace(0, 90, 300)
 for ax, rat in zip(axes, rats_ok):
     sub_sum = summary[summary[RAT_COL] == rat]
 
-    # reference curve using ALL trials for that rat, conditioned on n-1 45° (not restricted to n-1=45)
-    raw_rat = dfc_40[dfc_40[RAT_COL] == rat]
+    # reference curve using ALL trials for that rat, conditioned on n-1 45° rewarded (not balanced, just to see the overall psychometric)
+    raw_rat = dfc_45[dfc_45[RAT_COL] == rat]
     popt_all, ok_all, x_fit_all, y_fit_all = fit_psychometric_curve(
         raw_rat[ANGLE_COL],
         raw_rat[ACTION_COL],
@@ -157,7 +147,12 @@ for ax, rat in zip(axes, rats_ok):
             x_grid, row["mu_med"], row["sigma_med"], row["gamma_med"], row["lapse_med"]
         )
 
-        # pointwise CI from bootstraps (param sampling)
+        # if use_max_dev:
+        #     # max-deviation CI from bootstraps (param sampling)
+        #       so that 95% of bootstrap curves are entirely within the band (more conservative respect to pointwise, 
+        #       accounts for multiple comparisons across x)
+        # else:
+        #     # pointwise CI from bootstraps (param sampling)
         boot_sub = boot_df[(boot_df[RAT_COL] == rat) & (boot_df["prev_action"] == prev_action)]
         params = boot_sub[["mu", "sigma", "gamma", "lapse"]].to_numpy()
 
