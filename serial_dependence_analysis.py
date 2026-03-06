@@ -193,7 +193,7 @@ def sigma_error(p, n):
         return 0
     return np.sqrt(1/n * (p * (1 - p)))
 
-def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=False): # CHANGED  minimal_curvefit=False
+def fit_psychometric_curve(angles, responses, min_trials=5, repeat_fit=False, minimal_curvefit=False): # CHANGED  minimal_curvefit=False
     """
     Fit cumulative Gaussian psychometric curve to data
     
@@ -247,10 +247,13 @@ def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=Fal
             # Fit the curve
             popt, _ = curve_fit(cumulative_gaussian_lapse, valid_angles, performance,
                             p0=p0, bounds=bounds, maxfev=1000)
-        
+            if repeat_fit:
             # Generate smooth curve for plotting
-            x_fit = np.linspace(0, 90, 100)
-            y_fit = cumulative_gaussian_lapse(x_fit, *popt)
+                x_fit = np.linspace(-45, 45, 200)
+                y_fit = cumulative_gaussian_lapse(x_fit, *popt)
+            else:
+                x_fit = np.linspace(0, 90, 100)
+                y_fit = cumulative_gaussian_lapse(x_fit, *popt)
         
         return popt, True, x_fit, y_fit
         
@@ -1177,7 +1180,26 @@ class SerialDependenceAnalyzer:
 
             return scores_dict
 
-            
+    
+
+    def calculate_model_criteria(self, model, X, y):
+        """Calculate AIC and BIC for a fitted scikit-learn LogisticRegression model"""
+        # Number of parameters (coefficients + intercept)
+        k = len(model.coef_[0]) + 1 
+        n = len(y)
+        
+        # Predict probabilities
+        probs = model.predict_proba(X)
+        
+        # Calculate Log-Likelihood
+        # We take the probability of the actual class (y=0 or y=1)
+        actual_probs = probs[np.arange(n), y.astype(int)]
+        log_likelihood = np.sum(np.log(actual_probs + 1e-15)) # Small epsilon to avoid log(0)
+        
+        aic = 2 * k - 2 * log_likelihood
+        bic = k * np.log(n) - 2 * log_likelihood
+        
+        return aic, bic, log_likelihood     
 
 
 
@@ -1221,11 +1243,20 @@ class SerialDependenceAnalyzer:
                         bin_values.append(rat_data[f'action_n-{i}'].values.astype(float))
                         bin_names.append(f'action_n-{i}')
                     if f'angle_hit_n-{i}' in features_keys: 
-                        bin_values.append(rat_data[f'angle_hit_n-{i}'].values.astype(float))
-                        bin_names.append(f'angle_hit_n-{i}')  
+                        cont_values.append(rat_data[f'angle_hit_n-{i}'].values.astype(float))
+                        cont_names.append(f'angle_hit_n-{i}')  
                     if f'angle_miss_n-{i}' in features_keys:
-                        bin_values.append(rat_data[f'angle_miss_n-{i}'].values.astype(float))
-                        bin_names.append(f'angle_miss_n-{i}')
+                        cont_values.append(rat_data[f'angle_miss_n-{i}'].values.astype(float))
+                        cont_names.append(f'angle_miss_n-{i}')
+                    if f'success_n-{i}' in features_keys: 
+                        bin_values.append(rat_data[f'success_n-{i}'].values.astype(float))
+                        bin_names.append(f'success_n-{i}')  
+                    if f'failure_n-{i}' in features_keys:
+                        bin_values.append(rat_data[f'failure_n-{i}'].values.astype(float))
+                        bin_names.append(f'failure_n-{i}')
+
+
+
                 if len(bin_names) == 0:
                     binary = False # a flag to indicate whether we have binary features or not, 
                     #which will determine how we build the feature matrix and scale it (I scale only continuous features)
@@ -1285,6 +1316,8 @@ class SerialDependenceAnalyzer:
                 # Calculate cross-validated accuracy
                 scores_df = self.cross_validate(rat_data, cont_values, bin_values, N_SPLITS=5, binary=binary)
                 features_names = cont_names + bin_names if binary else cont_names
+                # 1. Calculate the criteria
+                aic, bic, log_lik = self.calculate_model_criteria(model, X, y)
                 #print(f"rat {rat_id}, feature names {features_names} model.intercept_ = {model.intercept_}")
                 # Store results
                 rat_results[rat_id] = {
@@ -1298,7 +1331,10 @@ class SerialDependenceAnalyzer:
                     'X': X,
                     'y': y,
                     'X_scaled&bin': X,
-                    'cross_validation_scores': scores_df
+                    'cross_validation_scores': scores_df,
+                    'aic': aic,
+                    'bic': bic,
+                    'log_likelihood': log_lik
                 }
                 
                 print(f"  Rat {rat_id}: {len(rat_data)} trials, accuracy = {train_accuracy:.3f}")
