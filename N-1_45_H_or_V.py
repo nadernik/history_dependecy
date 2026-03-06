@@ -51,17 +51,19 @@ df_processed, angle_to_label_N  = fa.bin_by_unique_angles(df_processed, name_new
 dfc_H = df_processed[
     (df_processed[BIN_COL_N_1] == '45°') &
     (df_processed['action_n-1'] == 0) &
-    (df_processed[BIN_COL_N].notna())
+    (df_processed[BIN_COL_N].notna()) &
+    (df_processed[HIT_COL] == 1)  # optional: filter to previous-trial hits only
 ].copy()
 blue_color = np.array([0.2, 0.4, 0.9, 1.0])
-
+print(f" number of trials per rat for H dataset: {dfc_H.groupby(RAT_COL).size()}")
 dfc_V = df_processed[
     (df_processed[BIN_COL_N_1] == '45°') &
     (df_processed['action_n-1'] == 1) &
-    (df_processed[BIN_COL_N].notna())
+    (df_processed[BIN_COL_N].notna()) &
+    (df_processed[HIT_COL] == 1)  # optional: filter to previous-trial hits only
 ].copy()
 red_color = np.array([0.9, 0.2, 0.2, 1.0])
-
+print(f" number of trials per rat for V dataset: {dfc_V.groupby(RAT_COL).size()}")
 dataset_list = [dfc_H, dfc_V]
 
 dfc = df_processed[

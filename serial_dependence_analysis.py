@@ -193,7 +193,7 @@ def sigma_error(p, n):
         return 0
     return np.sqrt(1/n * (p * (1 - p)))
 
-def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=False): # CHANGED  minimal_curvefit=False
+def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=False, repeat_fit=False): # CHANGED  minimal_curvefit=False
     """
     Fit cumulative Gaussian psychometric curve to data
     
@@ -242,15 +242,27 @@ def fit_psychometric_curve(angles, responses, min_trials=5, minimal_curvefit=Fal
             y_fit = cumulative_gaussian_fixed_lapse(x_fit, *popt)
 
         else: 
-            p0 = [45, 15, 0, 0]  # [mu, sigma, gamma, lambda]
-            bounds = ([20, 5, 0, 0], [70, 50, 0.3, 0.3])
+            GAMMA_MAX = 0.05   # try 0.03–0.10
+            LAPSE_MAX = 0.05   # try 0.03–0.10
+
+            # [mu, sigma, gamma, lambda]
+            p0 = [45, 15, 0.01, 0.02]  # small nonzero starts help stability
+            bounds = ([20, 5, 0.0, 0.0],
+                      [70, 50, GAMMA_MAX, LAPSE_MAX])
+
+            #p0 = [45, 15, 0, 0]  # [mu, sigma, gamma, lambda]
+            #bounds = ([20, 5, 0, 0], [70, 50, 0.3, 0.3])
             # Fit the curve
             popt, _ = curve_fit(cumulative_gaussian_lapse, valid_angles, performance,
-                            p0=p0, bounds=bounds, maxfev=1000)
-        
+                            p0=p0, bounds=bounds, maxfev=2000)
+
+            if repeat_fit:
+                x_fit = np.linspace(-45, 45, 100)
+                y_fit = cumulative_gaussian_lapse(x_fit, *popt)
+            else:
             # Generate smooth curve for plotting
-            x_fit = np.linspace(0, 90, 100)
-            y_fit = cumulative_gaussian_lapse(x_fit, *popt)
+                x_fit = np.linspace(0, 90, 100)
+                y_fit = cumulative_gaussian_lapse(x_fit, *popt)
         
         return popt, True, x_fit, y_fit
         
@@ -1220,12 +1232,12 @@ class SerialDependenceAnalyzer:
                     if f'action_n-{i}' in features_keys:
                         bin_values.append(rat_data[f'action_n-{i}'].values.astype(float))
                         bin_names.append(f'action_n-{i}')
-                    if f'angle_hit_n-{i}' in features_keys: 
-                        bin_values.append(rat_data[f'angle_hit_n-{i}'].values.astype(float))
-                        bin_names.append(f'angle_hit_n-{i}')  
-                    if f'angle_miss_n-{i}' in features_keys:
-                        bin_values.append(rat_data[f'angle_miss_n-{i}'].values.astype(float))
-                        bin_names.append(f'angle_miss_n-{i}')
+                    if f'success_n-{i}' in features_keys: 
+                        bin_values.append(rat_data[f'success_n-{i}'].values.astype(float))
+                        bin_names.append(f'success_n-{i}')  
+                    if f'failure_n-{i}' in features_keys:
+                        bin_values.append(rat_data[f'failure_n-{i}'].values.astype(float))
+                        bin_names.append(f'failure_n-{i}')
                 if len(bin_names) == 0:
                     binary = False # a flag to indicate whether we have binary features or not, 
                     #which will determine how we build the feature matrix and scale it (I scale only continuous features)
