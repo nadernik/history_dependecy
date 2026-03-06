@@ -55,7 +55,7 @@ boot_rows = []
 rats = sorted(dfc_45[RAT_COL].unique())
 
 for rat in rats:
-    rat_df = dfc_45[dfc_45[RAT_COL] == rat]
+    rat_df = dfc_40[dfc_40[RAT_COL] == rat]
 
     g0 = rat_df[rat_df[ACTION_N1_COL] == 0]
     g1 = rat_df[rat_df[ACTION_N1_COL] == 1]
@@ -137,7 +137,7 @@ for ax, rat in zip(axes, rats_ok):
     sub_sum = summary[summary[RAT_COL] == rat]
 
     # reference curve using ALL trials for that rat, conditioned on n-1 45° (not restricted to n-1=45)
-    raw_rat = dfc_45[dfc_45[RAT_COL] == rat]
+    raw_rat = dfc_40[dfc_40[RAT_COL] == rat]
     popt_all, ok_all, x_fit_all, y_fit_all = fit_psychometric_curve(
         raw_rat[ANGLE_COL],
         raw_rat[ACTION_COL],
