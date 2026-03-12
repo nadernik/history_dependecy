@@ -19,7 +19,7 @@ HITMISS_N1_COL = "hitmiss_n-1"    # trial n-1 outcome (0/1)
 N_BOOT         = 100
 RANDOM_SEED    = 0
 MIN_TRIALS_FIT = 10               # min balanced trials per prev_action to keep the rat
-use_max_dev = True                   # if True, use max-deviation method for CIs; else pointwise quantiles
+use_max_dev = False               # if True, use max-deviation method for CIs; else pointwise quantiles
 # =============================
 # LOAD + PREPROCESS
 # =============================
@@ -175,8 +175,8 @@ for ax, rat in zip(axes, rats_ok):
                 y_hi = np.clip(y_ref + c, 0, 1)
             else:
                 y_boot = np.array([cumulative_gaussian_lapse(x_grid, p[0], p[1], p[2], p[3]) for p in params])
-                y_lo = np.quantile(y_boot, 0.025, axis=0)
-                y_hi = np.quantile(y_boot, 0.975, axis=0)
+                y_lo = np.quantile(y_boot, 0.16, axis=0)
+                y_hi = np.quantile(y_boot, 0.84, axis=0)
 
         if prev_action == 0:
             label = "prev judged H (action n-1 = 0)"
