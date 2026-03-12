@@ -176,11 +176,14 @@ def cumulative_gaussian_fixed_lapse(x, mu, sigma, gamma = 0.02, lambda_param = 0
     x = np.asarray(x, dtype=float)
     mu = float(mu)
     sigma = float(sigma)
+    # prevent numerical problems
+    sigma = max(sigma, 1e-6)
     gamma = float(gamma)
     lambda_param = float(lambda_param)
     # MATLAB: y=gamma+(1-gamma-lambda)*(1/2.*(1+erf((x-mu)./sqrt(2*sigma^2))));
     # Direct conversion from MATLAB using scipy.special.erf
     y = gamma + (1 - gamma - lambda_param) * (0.5 * (1 + erf((x - mu) / np.sqrt(2 * sigma**2))))
+    y = np.clip(y, 1e-6, 1 - 1e-6)
     return y
 # mia nueva 
 #-----------------------------------------------------------------------------
@@ -457,7 +460,7 @@ class SerialDependenceAnalyzer:
             except Exception as e:
                 print(f"Error saving processed data: {e}")
     
-    def load_and_preprocess_data(self):
+    def load_and_preprocess_data(self, fold=True):
         """Load and preprocess data (same as before)"""
         print("=== STEP 1: DATA LOADING AND PREPROCESSING ===")
         
@@ -501,13 +504,15 @@ class SerialDependenceAnalyzer:
             self.df = self.df[self.df['hitmiss'].isin([0, 1])]
             
             # Angle processing
-            self.df['angle'] = self.df['angle'].astype(float)
-            self.df.loc[self.df['angle'] > 180, 'angle'] = self.df.loc[self.df['angle'] > 180, 'angle'] - 180
-            self.df.loc[self.df['angle'] > 90, 'angle'] = (90 - (self.df.loc[self.df['angle'] > 90, 'angle'] - 90)) + 90
+            if fold:
+                self.df['angle'] = self.df['angle'].astype(float)
+                self.df.loc[self.df['angle'] > 180, 'angle'] = self.df.loc[self.df['angle'] > 180, 'angle'] - 180
+                self.df.loc[self.df['angle'] > 90, 'angle'] = (90 - (self.df.loc[self.df['angle'] > 90, 'angle'] - 90)) + 90
+                
+                # Filter angles and modalities
+                self.df = self.df[(self.df['angle'] >= 0) & (self.df['angle'] <= 90)]
+                self.df = self.df[self.df['mod'] != 4]  # Exclude control
             
-            # Filter angles and modalities
-            self.df = self.df[(self.df['angle'] >= 0) & (self.df['angle'] <= 90)]
-            self.df = self.df[self.df['mod'] != 4]  # Exclude control
             
             # Handle reversed rule rats
             for rat_id in self.rev_rule_rats:
@@ -1355,6 +1360,119 @@ class SerialDependenceAnalyzer:
         
         print(f"\nSuccessfully analyzed {len(rat_results)} rats")
         return rat_results
+
+    def bootstrap_pvalues(self, rat_results, n_iterations=1000, random_state=42):
+        """
+        Estimate p-values for each coefficient via permutation bootstrap.
+        For each rat and each feature, shuffles y n_iterations times,
+        refits the same sklearn model, and computes p-value as the fraction
+        of null coefficients >= the observed coefficient.
+        
+        Parameters
+        ----------
+        rat_results : dict
+            Output of analyze_individual_rats_ale()
+        n_iterations : int
+            Number of permutations (1000 is solid; 5000 for publication)
+        random_state : int
+        
+        Returns
+        -------
+        pval_df : pd.DataFrame
+            Long-format dataframe with columns:
+            rat_id, feature, beta_real, p_value, significant
+        """
+        rng = np.random.default_rng(random_state)
+        all_rows = []
+
+        for rat_id, d in rat_results.items():
+            X         = d['X']           # already scaled, same matrix used for fitting
+            y         = d['y']
+            coef_real = d['coefficients']          # shape (n_features,)
+            feat_names = d['feature_names']
+
+            print(f"Bootstrapping Rat {rat_id} ({n_iterations} iterations)...")
+
+            # --- build null distribution ---
+            null_coefs = np.zeros((n_iterations, len(feat_names)))
+
+            for it in range(n_iterations):
+                y_perm = rng.permutation(y)        # shuffle y, keep X intact
+                null_model = LogisticRegression(
+                    penalty='l2',
+                    C=1.0,
+                    max_iter=1000,
+                    random_state=42
+                )
+                null_model.fit(X, y_perm)
+                null_coefs[it] = null_model.coef_[0]
+
+            # --- compute p-values ---
+            for j, feat in enumerate(feat_names):
+                beta_real = coef_real[j]
+                # two-tailed: how often is |null| >= |real|?
+                p_val = np.mean(np.abs(null_coefs[:, j]) >= np.abs(beta_real))
+                all_rows.append({
+                    'rat_id':      rat_id,
+                    'feature':     feat,
+                    'beta_real':   beta_real,
+                    'p_value':     p_val,
+                    'significant': p_val < 0.05
+                })
+
+        pval_df = pd.DataFrame(all_rows)
+        return pval_df
+
+    def plot_bootstrap_pvalues(self, beta_df, pval_df, model_label="", beta_cols=None):
+        
+        """
+        Heatmap of betas with asterisks where p < 0.05.
+        Replaces the original beta heatmap + p-value heatmap with a single plot.
+        
+        Parameters
+        ----------
+        beta_df   : pd.DataFrame  — rats × features, contains beta_ columns (from flatten_model_results)
+        pval_df   : pd.DataFrame  — long format output of bootstrap_pvalues()
+        beta_cols : list          — ordered list of beta columns to display (shared axis across models)
+        """
+        # ---- pivot p-values to wide format (rats x features) ----
+        pval_pivot = pval_df.pivot(index='rat_id', columns='feature', values='p_value')
+
+        # ---- align beta_df to the shared beta_cols axis ----
+        B = beta_df.reindex(columns=beta_cols) if beta_cols else beta_df
+
+        # ---- build annotation matrix: "0.23" or "0.23*" ----
+        annot = B.copy().astype(object)
+        for rat_id in B.index:
+            for col in B.columns:
+                feat = col.replace("beta_", "")          # "beta_angle" --> "angle"
+                beta_val = B.loc[rat_id, col]
+                if pd.isna(beta_val):
+                    annot.loc[rat_id, col] = ""
+                    continue
+                label = f"{beta_val:.2f}"
+                # check if p-value exists and is significant
+                if rat_id in pval_pivot.index and feat in pval_pivot.columns:
+                    if pval_pivot.loc[rat_id, feat] < 0.05:
+                        label += "*"
+                annot.loc[rat_id, col] = label
+
+        # ---- plot ----
+        plt.figure(figsize=(0.55 * len(B.columns) + 3, 0.55 * len(B) + 2))
+        sns.heatmap(
+            B,
+            cmap="coolwarm",
+            center=0,
+            annot=annot,
+            fmt="",                  # fmt must be "" when annot is strings
+            linewidths=0.5,
+            cbar_kws={"label": "beta"}
+        )
+        plt.title(f"{model_label} – betas (* = p < 0.05)")
+        plt.ylabel("rat_id")
+        plt.xlabel("")
+        plt.tight_layout()
+        plt.show()
     
     
 # ---- START NEW METHOD FOR INDIVIDUAL RAT PLOTTING ----
