@@ -118,7 +118,7 @@ n = len(rats_ok)
 ncols = int(np.ceil(np.sqrt(n)))
 nrows = int(np.ceil(n / ncols))
 
-fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 5 * nrows + 1.5), sharex=True, sharey=True,
+fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharex=True, sharey=True,
                          constrained_layout=True)
 axes = np.atleast_1d(axes).reshape(-1)
 

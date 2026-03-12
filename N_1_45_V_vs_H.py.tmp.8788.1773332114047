@@ -118,7 +118,7 @@ n = len(rats_ok)
 ncols = int(np.ceil(np.sqrt(n)))
 nrows = int(np.ceil(n / ncols))
 
-fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 5 * nrows + 1.5), sharex=True, sharey=True,
+fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 4 * nrows), sharex=True, sharey=True,
                          constrained_layout=True)
 axes = np.atleast_1d(axes).reshape(-1)
 
@@ -195,24 +195,21 @@ for ax, rat in zip(axes, rats_ok):
     ax.set_ylim(0, 1)
 
     n_bal = int(sub_sum["n_balanced"].iloc[0])
-    ax.set_title(f"Rat {rat}  (n={n_bal})", fontsize=10)
+    ax.set_title(f"Rat {rat} | prev-action = {n_bal}")
+    ax.set_xlabel("Trial n angle (deg)")
+    ax.set_ylabel("P(action=1)")
 
 # hide unused axes
 for ax in axes[len(rats_ok):]:
     ax.set_visible(False)
 
-# shared axis labels
-fig.supxlabel("Trial n angle (deg)", fontsize=11)
-fig.supylabel("P(action=1)", fontsize=11)
-
-# one shared legend, inside the figure
+# one shared legend
 handles, labels = axes[0].get_legend_handles_labels()
 if handles:
-    fig.legend(handles, labels, loc="upper center", ncol=3, fontsize=9,
-               bbox_to_anchor=(0.5, 1.0), bbox_transform=fig.transFigure)
+    fig.legend(handles, labels, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.02))
 
 fig.suptitle(
-    "Psychometric curves | trial n, prev rewarded 45°, split by prev choice",
-    fontsize=11, y=1.03
+    "Psychometric curves on trial n conditioned on rewarded boundary trial (n-1 angle=45), split by prev choice",
+    y=1.06
 )
 plt.show()
