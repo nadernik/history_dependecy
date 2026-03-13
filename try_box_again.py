@@ -40,24 +40,97 @@ BIN_COL_N_MID   = 'bin_n_midpoint'    # numeric midpoint for current-trial bin (
 RAT_COL         = 'rat'               # subject/animal ID  
 ACTION_N_1      = 'action_n-1'        # previous-trial response (0/1)
 ACTION          = 'action'            # current-trial response (0/1)
+TRANS_COL  = 'mod_transition_n-1'
 
 an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
+transitions = sorted(df_processed[TRANS_COL].dropna().unique(), key=str)
+n_trans = len(transitions)
+# set up subplots
+ncols = int(np.ceil(np.sqrt(n_trans))) 
+nrows = int(np.ceil(n_trans / ncols))  
+
+fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows),
+                        sharex=True, sharey=True, constrained_layout=True)
+axes = np.atleast_1d(axes).reshape(-1)
+# analyze rats for each transition type
+for ax, tr in zip(axes, transitions):
+    rat_results = an.analyze_individual_rats(minimal_glm=True, mod_tr=tr)  # modality: 1=touch, 2=vision, 3=vt
+
+    # estrai betas per rat
+    rows = []
+    for rat_id, res in rat_results.items():
+        names = res['feature_names']
+        coefs = res['coefficients']
+        if 'angle_n-1' not in names:
+            continue
+        beta = coefs[names.index('angle_n-1')]
+        rows.append((rat_id, beta))
+        
+    # store betas in dataframe
+    beta_df = pd.DataFrame(rows, columns=['rat', 'beta_prev_angle']).sort_values('rat')
+
+# colori per segno
+    colors = np.where(beta_df['beta_prev_angle'] > 0, 'red',
+            np.where(beta_df['beta_prev_angle'] < 0, 'blue', 'gray'))
+
+    rats = beta_df['rat'].tolist()
+    x = np.arange(len(rats))
+    y = beta_df['beta_prev_angle'].values
+    ax.axhline(0, color='k', ls='--', alpha=0.4)
+    #plt.scatter(x, beta_df['beta_prev_angle'], c=colors, s=80)
+    ax.bar(
+        x,
+        y,
+        color=colors,
+        width=0.6
+    )
+
+    # add text labels
+    for xi, yi in zip(x, y):
+        if yi > 0:
+            ax.text(
+                xi,
+                yi + 0.02 * max(abs(y)),   # slightly above bar
+                f"{yi:.3f}",
+                ha='center',
+                va='bottom',
+                fontsize=9
+            )
+        elif yi < 0:
+            ax.text(
+                xi,
+                yi - 0.02 * max(abs(y)),   # slightly below bar
+                f"{yi:.3f}",
+                ha='center',
+                va='top',
+                fontsize=9
+            )
+    ax.set_xticks(x)
+    ax.set_xticklabels(rats, rotation=45, ha='right')
+    #ax.xticks(ticks=x,labels=rats,rotation=45, ha='right')
+    # vertical lines from 0 to each beta
+    '''
+    plt.vlines(
+        x,
+        ymin=0,
+        ymax=y,
+        colors=colors,
+        linewidth=2,
+        alpha=0.8
+    )
+    '''
+    ax.set_title(f'{tr} Betas per rat')
+    ax.set_xlabel('Rat')
+    ax.set_ylabel('Beta (angle_n-1)')
+    
+plt.show()
+
+
+
 
 '''
-df_processed, angle_to_label_N_1 = fa.bin_by_unique_angles(
-    df_processed, name_new_col=BIN_COL_N_1, n_groups=2,
-    angle_col='angle_n-1', exclude_angle=45
-)
-df_processed, angle_to_label_N  = fa.bin_by_unique_angles(
-    df_processed, name_new_col=BIN_COL_N,   n_groups=2,
-    angle_col='angle', exclude_angle=45
-)
-'''
-
-rat_results = an.analyze_individual_rats(minimal_glm=True, transition = (1,2))  # modality: 1=touch, 2=vision, 3=vt
-
 print (rat_results.keys())
 for rat_id in rat_results.keys():
     #print("Rat", rat_id, "feature names:", rat_results[rat_id]['feature_names'])
@@ -66,17 +139,17 @@ for rat_id in rat_results.keys():
 
     beta_prev_angle = coefs[names.index('angle_n-1')]
     print("Rat", rat_id, "beta(angle_n-1) =", beta_prev_angle)
-'''
+
 
 input("Press Enter to close plots...")
 
-'''
+
 
 # mo devo tipo plottare sti cosi qui per ogni ratto e sto point fare le analisi anche per modalità (tatto, vis, vt)
 
 
 
-
+'''
 
 
 

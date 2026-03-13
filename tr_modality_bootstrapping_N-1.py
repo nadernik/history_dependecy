@@ -65,6 +65,8 @@ bin_means_cur  = {b: fa.midpoint(b) for b in pd.Series(dfc[BIN_COL_N]).dropna().
 # Attach current-bin numeric midpoint to dfc so curve fits have proper x-values
 dfc[BIN_COL_N_MID] = dfc[BIN_COL_N].map(bin_means_cur)
 # -----------------------------
+# BOOTSTRAP PER TRANSITION TYPE
+# -----------------------------
 for tr in transitions:
         dfc_tr = dfc[dfc[TRANS_COL] == tr].copy()
         grup_col = [BIN_COL_N_1, RAT_COL, TRANS_COL]   
@@ -79,7 +81,7 @@ for tr in transitions:
             .reset_index()
         )
 
-
+        # compute bottleneck side per rat/bin and store it per rat
         agg['min_side_count'] = agg[['right_trials', 'left_trials']].min(axis=1)
         agg['min_side_action'] = (agg['right_trials'] < agg['left_trials']).astype(int)
         worst = (

@@ -60,8 +60,8 @@ df_processed = an.create_lagged_features()
 # NOTE: we build both prev-bin and current-bin labels; the second call returns angle_to_label
 # that is the mapping for angles (the same for prev and curr), which we use later to plot by current bins.
 # -----------------------------
-df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=6, angle_col='angle_n-1', exclude_angle=45)
-df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=6, angle_col='angle', exclude_angle=45)
+df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle= True)
+df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle= True)
 
 # -----------------------------
 # CLEANING
@@ -90,7 +90,7 @@ agg_rats = fa.aggregate_data(dfc, BIN_COL_N_1, ANGLE_COL, RESP_COL, RAT_COL=RAT_
 # -----------------------------
 # Prev-bin midpoints (for color & legend sorting)
 bin_means_prev = {b: fa.midpoint(b) for b in pd.Series(dfc[BIN_COL_N_1]).dropna().unique()}
-color_by_bin   = fa.color_bin(bin_means_prev)
+color_by_bin, _   = fa.color_bin(bin_means_prev)
 
 # Current-bin midpoints (for x-axis)
 bin_means_cur  = {b: fa.midpoint(b) for b in pd.Series(dfc[BIN_COL_N]).dropna().unique()}
@@ -115,7 +115,7 @@ axes = np.atleast_1d(axes).reshape(-1)
 # -----------------------------
 for ax, rat in zip(axes, rats):
     agg_rat = agg_rats[agg_rats[RAT_COL] == rat]
-
+    
     # iterate prev-bins in order of their numeric midpoint (so legend/colors match)
     for b in sorted(bin_means_prev, key=bin_means_prev.get):
         sub = agg_rat[agg_rat[BIN_COL_N_1] == b]

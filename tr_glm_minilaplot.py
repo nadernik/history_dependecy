@@ -51,7 +51,7 @@ n_trans = len(transitions)
 ncols = int(np.ceil(np.sqrt(n_trans))) 
 nrows = int(np.ceil(n_trans / ncols))  
 
-fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows),
+fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 6.5*nrows),
                         sharex=True, sharey=True, constrained_layout=True)
 axes = np.atleast_1d(axes).reshape(-1)
 # analyze rats for each transition type
@@ -79,6 +79,8 @@ for ax, tr in zip(axes, transitions):
     x = np.arange(len(rats))
     y = beta_df['beta_prev_angle'].values
     ax.axhline(0, color='k', ls='--', alpha=0.4)
+    # show x tick labels only on bottom row
+
     #plt.scatter(x, beta_df['beta_prev_angle'], c=colors, s=80)
     ax.bar(
         x,
@@ -86,29 +88,43 @@ for ax, tr in zip(axes, transitions):
         color=colors,
         width=0.6
     )
+    # add labels on top (matplotlib 3.4+)
+   
+    
 
+    ylim = ax.get_ylim()
+    yrange = ylim[1] - ylim[0]
+    offset = 0.04 * yrange
     # add text labels
     for xi, yi in zip(x, y):
         if yi > 0:
             ax.text(
                 xi,
-                yi + 0.02 * max(abs(y)),   # slightly above bar
+                yi + offset,   # slightly above bar
                 f"{yi:.3f}",
                 ha='center',
                 va='bottom',
-                fontsize=9
+                fontsize=8,
+                clip_on = False
             )
         elif yi < 0:
             ax.text(
                 xi,
-                yi - 0.02 * max(abs(y)),   # slightly below bar
+                yi - offset,   # slightly below bar
                 f"{yi:.3f}",
                 ha='center',
                 va='top',
-                fontsize=9
+                fontsize=8,
+                clip_on = False
             )
     ax.set_xticks(x)
-    ax.set_xticklabels(rats, rotation=45, ha='right')
+    ax.tick_params(axis='x', labelsize=8)
+    ax.tick_params(axis='y', labelsize=9)
+    if ax not in axes[-ncols:]:
+        ax.set_xticklabels([])
+        ax.set_xlabel('')
+    else:
+        ax.set_xticklabels(rats, rotation=45, ha='right')
     #ax.xticks(ticks=x,labels=rats,rotation=45, ha='right')
     # vertical lines from 0 to each beta
     '''
@@ -121,8 +137,26 @@ for ax, tr in zip(axes, transitions):
         alpha=0.8
     )
     '''
-    ax.set_title(f'{tr} Betas per rat')
-    ax.set_xlabel('Rat')
-    ax.set_ylabel('Beta (angle_n-1)')
+    #I want to select only the first coloumn of subplots, y axis label only on the first column
+    if ax not in axes[::ncols]:
+        ax.set_ylabel('')
+    else:
+        ax.set_ylabel('Beta (angle_n-1)')
+
+    ax.set_title(f'{tr} All rats', fontsize=10)
+    #ax.set_xlabel('Rat')
     
+
+    fig.subplots_adjust(
+    bottom=0.25,   # space for x tick labels (last row)
+    left=0.12,     # space for y ticks
+    wspace=0.25,
+    hspace=0.35
+)
+
+# Source - https://stackoverflow.com/a
+# Posted by Anurag Reddy
+# Retrieved 2025-12-15, License - CC BY-SA 4.0
+
+
 plt.show()

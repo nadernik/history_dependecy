@@ -36,6 +36,7 @@ STATE_COL = 'hitmiss_n-1'      # 0/1
 state_values = [0, 1]
 BOUNDARY        = 45
 RESP_COL        = 'action'
+MODALITY_COL = 'mod'            
 
 # -----------------------------
 # LOAD + PREPROCESS
@@ -135,22 +136,25 @@ def bootstrap_session_levels(df, x_col, x_levels, n_boot=500, seed=0):
 # -----------------------------
 rats = sorted(df_processed[RAT_COL].dropna().unique())
 n = len(rats)
-ncols = int(np.ceil(np.sqrt(n)))
-nrows = int(np.ceil(n / ncols))
-
+ncols = int(np.ceil(np.sqrt(3)))
+nrows = int(np.ceil(3 / ncols))
+#ncols = 3
+#nrows = 1
+mod_map = {1: "T", 2: "V", 3: "VT"}
 color_map = {0: "violet", 1: "yellow"}  # match your earlier description if you want
 modalities= sorted(modalities)
 print(f"unique evidence levels: {np.sort(df_processed[EVIDENCE_COL].dropna().unique())}")
-for md in modalities:
+for rat in rats:
     fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows), sharex=True, sharey=True, constrained_layout=True)
     axes = np.atleast_1d(axes).reshape(-1)
-    df_md = df_processed[df_processed["mod"] == md]
-    print(f"Modality {md}: {len(df_md)} trials")
-    for ax, rat in zip(axes, rats):
-        rat_df = df_md[df_md[RAT_COL] == rat].dropna(subset=[EVIDENCE_COL, REP_COL, SESSION_COL, STATE_COL])
-        x_levels = np.sort(rat_df[EVIDENCE_COL].dropna().unique())
+    rat_df = df_processed[df_processed[RAT_COL] == rat].dropna(subset=[EVIDENCE_COL, REP_COL, SESSION_COL, STATE_COL])
+    print(f"Rat {rat}: {len(rat_df)} trials")
+    for ax, md in zip(axes, modalities):
+        rat_md = rat_df[rat_df[MODALITY_COL] == md]
+        x_levels = np.sort(rat_md[EVIDENCE_COL].dropna().unique())
+        md_label = mod_map.get(md, f"aaah")
         for rs in state_values:
-            sub = rat_df[rat_df[STATE_COL] == rs]
+            sub = rat_md[rat_md[STATE_COL] == rs]
             if len(sub) < 20:
                 continue
 
@@ -165,9 +169,9 @@ for md in modalities:
         ax.axvline(0, color='k', ls='--', alpha=0.4)      # evidence boundary is 0
         ax.set_xlim(-45, 45)
         ax.set_ylim(0, 1)
-        ax.set_title(f"Rat {rat}")
+        ax.set_title(f"Rat {rat}, , md: {md_label}")
         ax.set_xlabel("Evidence for repetition")
-        ax.set_ylabel(f"P(repeat), {md}")
+        ax.set_ylabel(f"P(repeat)")
 
     # hide unused axes
     for ax in axes[len(rats):]:

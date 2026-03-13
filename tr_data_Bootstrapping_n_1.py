@@ -44,6 +44,7 @@ ACTION          = 'action'    # current-trial response (0/1)
 TRANS_COL  = 'mod_transition_n-1'     # e.g. 'T->V', 'V->VT', ...
 ANGLE_COL  = 'angle'
 MOD_COL = 'mod'  # e.g. 1 -->'T', 2-->'V', 3-->'VT'
+REPETITION_COL = 'repetition_n-1'  # e.g. 'rep', 'alt'
 
 
 # -----------------------------
@@ -56,6 +57,7 @@ df_processed = an.create_lagged_features()
 df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle=45)
 df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
+dfc[REPETITION_COL] = (dfc[ACTION_N_1] == dfc[ACTION]).astype(int) # 1: repetition, 0: alternation
 # --- Get unique transitions ---
 #dfc here is inherited from before so we have already added the bins, rat and bin mid points columns
 #transitions = sorted(dfc[TRANS_COL].dropna().unique(), key=str)
@@ -73,10 +75,11 @@ dfc[BIN_COL_N_MID] = dfc[BIN_COL_N].map(bin_means_cur)
 # -----------------------------
 # BOOTSTRAP PER TRANSITION TYPE
 # -----------------------------
-rat = 13  # which rat to analyze
+rat = 10  # which rat to analyze
 boot_results = []
 for md in modalities:
         dfc_tr = dfc[dfc[MOD_COL] == md].copy()
+        dfc_tr = dfc_tr[dfc_tr[RAT_COL] == rat].copy()
         grup_col = [BIN_COL_N_1, RAT_COL, MOD_COL]   
 
         agg = (
@@ -146,9 +149,9 @@ for md in modalities:
                 })
                 
 
-    # -----------------------------
-    # Analyses and bootstrap + plotting
-    # -----------------------------
+# -----------------------------
+# Analyses and bootstrap + plotting
+# -----------------------------
 boot_df = pd.DataFrame(boot_results)
 
 group_cols = ['rat', 'prev_bin', 'md_mode',]
@@ -173,7 +176,7 @@ summary = (
 
 from pathlib import Path
 
-output_path_1 = Path("rat13_allmodalities_bootstrap_psychometric_params.csv")
+output_path_1 = Path("rat10_allmodalities_bootstrap_psychometric_params.csv")
 
 
 if not output_path_1.exists():

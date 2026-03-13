@@ -42,11 +42,13 @@ ACTION_N_1      = 'action_n-1'        # previous-trial response (0/1)
 ACTION          = 'action'            # current-trial response (0/1)
 TRANS_COL  = 'mod_transition_n-1'
 
+# load data and preprocess
 an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 transitions = sorted(df_processed[TRANS_COL].dropna().unique(), key=str)
 n_trans = len(transitions)
+
 # set up subplots
 ncols = int(np.ceil(np.sqrt(n_trans))) 
 nrows = int(np.ceil(n_trans / ncols))  
@@ -54,6 +56,7 @@ nrows = int(np.ceil(n_trans / ncols))
 fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 6.5*nrows),
                         sharex=True, sharey=True, constrained_layout=True)
 axes = np.atleast_1d(axes).reshape(-1)
+
 # analyze rats for each transition type
 for ax, tr in zip(axes, transitions):
     rat_results = an.analyze_individual_rats(minimal_glm=True, mod_tr=tr)  # modality: 1=touch, 2=vision, 3=vt

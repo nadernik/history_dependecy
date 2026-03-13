@@ -55,6 +55,7 @@ df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1
 df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
 
+
 # Current-bin midpoints (for x-axis)
 bin_means_cur  = {b: fa.midpoint(b) for b in pd.Series(dfc[BIN_COL_N]).dropna().unique()}
 
@@ -84,6 +85,7 @@ worst = (
        .head(1)[[RAT_COL, BIN_COL_N_1, 'min_side_count', 'min_side_action']]
 )
 worst = worst.reset_index(drop=True)
+print(f"Bottleneck (min side) per rat:{worst}")
 
 # -----------------------------
 # BOOTSTRAPPING PSYCHOMETRIC CURVE FITS
@@ -91,14 +93,16 @@ worst = worst.reset_index(drop=True)
 n_bootstraps = 1000
 boot_results = []
 n_samples_per_condition_80_list = {}
+n_samples_per_condition_list= {}
 for rat in agg[RAT_COL].unique():
     # bottleneck number: worst side, worst bin, per rat
     n_samples_per_condition = worst.loc[worst['rat'] == rat, 'min_side_count'].item()
     
     # use 80% rounded, minus 1 so that we don't round above to 81%
-    n_samples_per_condition_80 = max(1, int(np.ceil(n_samples_per_condition * 0.8)) - 1) #this is the number of samples per side(R\L\action) that we will use for bootstrapping
-    print(f'Rat {rat} will use {n_samples_per_condition_80}, so 80% of {n_samples_per_condition} samples per condition (side) for bootstrapping.')
-    n_samples_per_condition_80_list[rat] = n_samples_per_condition_80
+    #n_samples_per_condition_80 = max(1, int(np.ceil(n_samples_per_condition * 0.8)) - 1) #this is the number of samples per side(R\L\action) that we will use for bootstrapping
+    #print(f'Rat {rat} will use {n_samples_per_condition_80}, so 80% of {n_samples_per_condition} samples per condition (side) for bootstrapping.')
+    #n_samples_per_condition_80_list[rat] = n_samples_per_condition_80
+    n_samples_per_condition_list[rat] = n_samples_per_condition
     for bin_label in agg[BIN_COL_N_1].unique():
         # subset per rat & prev_bin
         df_subset = dfc[(dfc[RAT_COL] == rat) & (dfc[BIN_COL_N_1] == bin_label)]
@@ -109,9 +113,9 @@ for rat in agg[RAT_COL].unique():
         
         for b in range(n_bootstraps):
             # resample with replacement
-            samp_r = right_trials.sample(n_samples_per_condition_80, replace=True)
-            samp_l = left_trials.sample(n_samples_per_condition_80, replace=True)
-            
+            samp_r = right_trials.sample(n_samples_per_condition, replace=True)
+            samp_l = left_trials.sample(n_samples_per_condition, replace=True)
+
             samp_dataset = pd.concat([samp_r, samp_l], ignore_index=True)
 
             popt, ok, x_fit_dummy, y_fit_dummy = fit_psychometric_curve(
@@ -133,7 +137,7 @@ for rat in agg[RAT_COL].unique():
                 'gamma': popt[2],
                 'lapse': popt[3],
             })
-
+# END OF  FIRST PART
 # -----------------------------
 # Analyses and bootstrap + plotting
 # -----------------------------
@@ -145,9 +149,20 @@ g = boot_df.groupby(group_cols)
 summary = (
     g.agg(
         mu_med     = ('mu', 'median'),
+        mu_q025    = ('mu', lambda x: x.quantile(0.025)),
+        mu_q975    = ('mu', lambda x: x.quantile(0.975)),
+
         sigma_med  = ('sigma', 'median'),
+        sigma_q025 = ('sigma', lambda x: x.quantile(0.025)),
+        sigma_q975 = ('sigma', lambda x: x.quantile(0.975)),
+
         gamma_med  = ('gamma', 'median'),
+        gamma_q025 = ('gamma', lambda x: x.quantile(0.025)),
+        gamma_q975 = ('gamma', lambda x: x.quantile(0.975)),
+
         lapse_med  = ('lapse', 'median'),
+        lapse_q025 = ('lapse', lambda x: x.quantile(0.025)),
+        lapse_q975 = ('lapse', lambda x: x.quantile(0.975)),
     )
     .reset_index()
 )
@@ -164,7 +179,7 @@ fig, axes = plt.subplots(nrows, ncols, figsize=(5*ncols, 4.5*nrows),
 axes = np.atleast_1d(axes).reshape(-1)
 # plotting finale
 x_fit = np.linspace(0, 90, 200)
-color_by_bin, _   = fa.color_bin(bin_means_cur)
+color_by_bin, _  = fa.color_bin(bin_means_cur)
 
 for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
     sub = summary[summary[RAT_COL] == rat] # summary of the 4 fit parametersfor this rat
@@ -224,7 +239,7 @@ for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
     ax.axvline(45,  color='k', ls='--', alpha=0.4)
     ax.set_xlim(0, 90)
     ax.set_ylim(0, 1)
-    ax.set_title(f"Rat {rat}, N = {n_samples_per_condition_80_list[rat]} samples")
+    ax.set_title(f"Rat {rat}, N = {n_samples_per_condition_list[rat]} samples")
     ax.set_xlabel('Current angle (deg)')
     ax.set_ylabel('P(action = 1)')
 

@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 # LOAD BOOTSTRAP RESULTS + SUMMARY
 # -----------------------------
 
-boot_df= pd.read_csv("rat13_allmodalities_bootstrap_psychometric_params.csv")
+boot_df= pd.read_csv("rat16_allmodalities_bootstrap_psychometric_params.csv")
 
 # -----------------------------
 # COMPUTE VIOLINE (one per rat)
@@ -84,7 +84,27 @@ order = list(wide["md_mode"].unique())   # lock order used by seaborn
 plt.figure(figsize=(max(10, 0.8 * len(order)), 4))
 ax = plt.gca()
 
-sns.violinplot(data=wide, x="md_mode", y="delta", inner="quartile", cut=0)
+sns.violinplot(data=wide, x="md_mode", y="delta",order=order, inner=None, cut=0, linewidth=0, color="lightgray", alpha=0.5, ax=ax)
+# Overlay summary statistics
+for i, row in delta_summary.set_index("md_mode").loc[order].reset_index().iterrows():
+    # CI line
+    ax.plot(
+        [i, i],
+        [row["low"], row["high"]],
+        color="black",
+        linewidth=2,
+        zorder=10
+    )
+
+    # Median dot
+    ax.scatter(
+        i,
+        row["med"],
+        color="black",
+        s=40,
+        zorder=11
+    )
+
 sns.stripplot(data=wide, x="md_mode", y="delta", jitter=0.25, size=2, alpha=0.25)
 
 
@@ -95,9 +115,9 @@ for i, md in enumerate(wide["md_mode"].unique()):
         plt.text(i, wide["delta"].max(), "*", ha="center", va="bottom", fontsize=14)
 
 plt.axhline(0, color="k", linestyle="--", alpha=0.5)
-plt.xlabel("Transition Type")
+plt.xlabel("Modality Type")
 plt.ylabel(f"Δ{param} ({bin_B} − {bin_A})")
-plt.title(f"Bootstrap Δ{param} per transition (paired bootstrap)")
+plt.title(f"Bootstrap Δ{param} per modality (paired bootstrap)")
 
 # ---------- ADD TEXT UNDER EACH VIOLIN ----------
 # Align summary rows with plotted order

@@ -115,10 +115,10 @@ nrows = int(np.ceil(n / ncols))
 colors = {
     "same": "tab:blue",
     "different": "tab:orange",
-    "prev45": "tab:green",
     "prevH_at45": "tab:purple",
     "prevV_at45": "tab:red",
 }
+colors_45 = ["tab:purple", "tab:red",]
 
 min_count_per_angle = 5
 for rw in [0,1]:  # optionally split by reward state
@@ -145,17 +145,20 @@ for rw in [0,1]:  # optionally split by reward state
             )
 
         # (B) EXTRA curve: previous angle == 45, plot vs current angle
-        ''' 
-        sub_prev45 = rat_df[rat_df[ANGLE_N1_COL] == BOUNDARY]
-        if len(sub_prev45) >= 30:
-            g_prev45 = prob_repeat_by_unique_angle(sub_prev45, min_count=min_count_per_angle)
-            ax.plot(
-                g_prev45["angle"], g_prev45["p_repeat"],
-                marker="o", linestyle="--",
-                color=colors["prev45"],
-                label="prev angle = 45° (n-1 boundary)"
-            )
-        ''' 
+        '''
+        if rw ==1:
+            for prev_action in [0,1]:
+                sub_prev45 = rat_df[(rat_df[ANGLE_N1_COL] == BOUNDARY) & (rat_df[RESP_N1_COL] == prev_action)]
+                if len(sub_prev45) >= 30:
+                    g_prev45 = prob_repeat_by_unique_angle(sub_prev45, min_count=min_count_per_angle)
+                    label = f"prev angle=45°, prev act={prev_action}"
+                    ax.plot(
+                        g_prev45["angle"], g_prev45["p_repeat"],
+                        marker="o", linestyle="--",
+                        color=colors_45[prev_action],
+                        label=label
+                    )
+        '''
         # (C) SPECIAL points at current angle == 45: split by prev category (H vs V)
         # This gives you exactly: “bias at ambiguous current stimulus”
         bias45 = prob_repeat_at_current_45_by_prev_cat(rat_df, boundary=BOUNDARY, min_count=10)
