@@ -1,3 +1,9 @@
+# this script plots empirical P(repeat) curves conditioned on evidence for repetition, split by reward state of the previous trial (hit vs miss).
+# evidence for repetition is defined as the signed distance of the current angle from the boundary, 
+# signed according to the previous choice (positive = evidence for repeating previous action, negative = evidence for switching to the other action).
+# The output is a series of triplet plots (one per rat) where each triplet contains the curves for the three sensory modalities, with different colors for previous hit vs miss.
+
+
 '''
 SAFELY CODING: 
 

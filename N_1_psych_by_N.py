@@ -1,3 +1,10 @@
+# plots empirical P(repeat) curves conditioned on n-1 angle, split by n-1 reward (hit vs miss). 
+# to observe the dependence of trial n choice on trial n-1 angle split by reward state.
+# split also by  trial n angle bin to look for effects that arise only when the current trial is difficult
+
+
+
+
 '''
 SAFELY CODING: 
 

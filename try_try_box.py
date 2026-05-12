@@ -1,28 +1,3 @@
-'''
-SAFELY CODING: 
-
-START session: 
-
-- check branch --> on the bottom left or run 'git branch' in terminal
--UPDATE branch --> 
-git checkout main (it goes to main branch)
-git pull (it updates my version of main branch to the current one if anybody changed it)
-- UPDATE your working branch -->
-git checkout feature/exploratory_psych_curves --> goes to your working branch
-git merge main --> merges main into your working branch, so that on my branch I have the latest updates from main
-
-START CODING
-
-
-END session:
-(optional) check changes made: git status
-git add exploratory_psych_curves.py --> stages the changes made to this file
-git commit -m "progress" --> makes a local checkpoint in your branch.
-(only the first time) git push -u origin feature/exploratory_psych_curves --> pushes the changes to my remote working branch
-git push --> from the second time onwards
-'''
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -42,6 +17,7 @@ ACTION_N_1      = 'action_n-1'  # previous-trial response (0/1)
 ACTION          = 'action'    # current-trial response (0/1)
 TRANS_COL  = 'mod_transition_n-1'     # e.g. 'T->V', 'V->VT', ...
 ANGLE_COL  = 'angle'
+TRIAL_ID_COL   = 'trialID'         # unique trial identifier
 
 
 # -----------------------------
@@ -51,8 +27,8 @@ an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 
-df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle=45)
-df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
+df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=6, angle_col='angle_n-1', exclude_angle= 45)
+df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=6, angle_col='angle', exclude_angle= 45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
 # --- Get unique transitions ---
 #dfc here is inherited from before so we have already added the bins, rat and bin mid points columns
@@ -65,9 +41,16 @@ bin_means_cur  = {b: fa.midpoint(b) for b in pd.Series(dfc[BIN_COL_N]).dropna().
 # Attach current-bin numeric midpoint to dfc so curve fits have proper x-values
 dfc[BIN_COL_N_MID] = dfc[BIN_COL_N].map(bin_means_cur)
 # -----------------------------
-# BOOTSTRAP PER TRANSITION TYPE
-# -----------------------------
+
+
+from collections import Counter
+
+n_bootstraps = 1000      # back to something reasonable
+MIN_PER_SIDE  = 25       # your cutoff
+boot_results = []
+trial_usage = Counter()  # to track how often each trial ID is used
 for tr in transitions:
+        trial_usage = Counter()  # reset for each transition
         dfc_tr = dfc[dfc[TRANS_COL] == tr].copy()
         grup_col = [BIN_COL_N_1, RAT_COL, TRANS_COL]   
 
@@ -81,52 +64,59 @@ for tr in transitions:
             .reset_index()
         )
 
-        # compute bottleneck side per rat/bin and store it per rat
+
         agg['min_side_count'] = agg[['right_trials', 'left_trials']].min(axis=1)
         agg['min_side_action'] = (agg['right_trials'] < agg['left_trials']).astype(int)
-        worst = (
-            agg.sort_values('min_side_count')
-            .groupby(RAT_COL)
-            .head(1)[[RAT_COL, BIN_COL_N_1, TRANS_COL, 'min_side_count', 'min_side_action']]
+
+          # compute local n80 per combo
+        agg['n80'] = agg['min_side_count'].apply(
+            lambda m: max(1, int(np.ceil(m * 0.8)) - 1)
         )
-        worst = worst.reset_index(drop=True)
 
-        print(f'transition: {tr},\ntable:\n{worst}')
+        # apply cutoff: we want at least MIN_PER_SIDE balanced samples
+        valid = agg[agg['n80'] >= MIN_PER_SIDE].copy()
 
+        if valid.empty:
+            print(f"No valid (rat, prev_bin) combos for transition {tr}")
+            continue
+        
+        #print(f'transition: {tr},\ntable:\n{worst}')
 
-        n_bootstraps = 1000
-        boot_results = []
-        n_samples_per_condition_80_list = {}
-        for rat in agg[RAT_COL].unique():
-            # bottleneck number: worst side, worst bin, per rat
-            n_samples_per_condition = worst.loc[worst['rat'] == rat, 'min_side_count'].item()
-            
-            # use 80% rounded, minus 1 so that we don't round above to 81%
-            n_samples_per_condition_80 = max(1, int(np.ceil(n_samples_per_condition * 0.8)) - 1)
-            if n_samples_per_condition_80 < 25: 
-                print(f'RAT {rat} skipped, N SAMPLE for cycle = {n_samples_per_condition_80}')
+            # ---- loop explicitly over valid (rat, prev_bin) combos ----
+        for _, row in valid.iterrows():
+            rat       = row[RAT_COL]
+            bin_label = row[BIN_COL_N_1]
+            n80       = row['n80']
+
+            print(f"  USE tr={tr}, rat={rat}, prev_bin={bin_label}, n80={n80}")
+
+            # subset real trials for this combo
+            df_subset = dfc_tr[(dfc_tr[RAT_COL] == rat) &
+                            (dfc_tr[BIN_COL_N_1] == bin_label)]
+
+            if df_subset.empty:
                 continue
-            else: 
-                print(f'Rat {rat} will use {n_samples_per_condition_80}, so 80% of {n_samples_per_condition} samples per condition (side) for bootstrapping.')
+
                 
-            n_samples_per_condition_80_list[rat] = n_samples_per_condition_80
-            for bin_label in agg[BIN_COL_N_1].unique():
-                # subset per rat & prev_bin
-                df_subset = dfc_tr[(dfc_tr[RAT_COL] == rat) & (dfc_tr[BIN_COL_N_1] == bin_label)]
+            # split in "right" and "left" according to ACTION_N_1
+            right_trials = df_subset[df_subset[ACTION_N_1] == 1]
+            left_trials  = df_subset[df_subset[ACTION_N_1] == 0]
                 
-                # split in "right" and "left" according to ACTION_N_1
-                right_trials = df_subset[df_subset[ACTION_N_1] == 1]
-                left_trials  = df_subset[df_subset[ACTION_N_1] == 0]
+                # if data are missing in one side, skip this rat/bin combo
+                #if (len(right_trials) == 0) or (len(left_trials) == 0):
+                    #print(f"Skipping rat {rat}, prev_bin {bin_label}: not enough trials on at least one side.")
+                    #continue
                 
-                for b in range(n_bootstraps):
+            for b in range(n_bootstraps):
                     # resample with replacement
-                    samp_r = right_trials.sample(n_samples_per_condition_80, replace=True)
-                    samp_l = left_trials.sample(n_samples_per_condition_80, replace=True)
+                    samp_r = right_trials.sample(n80, replace=True)
+                    samp_l = left_trials.sample(n80, replace=True)
                     
                     samp_dataset = pd.concat([samp_r, samp_l], ignore_index=True)
+                    trial_usage.update(samp_dataset[TRIAL_ID_COL].tolist())
 
                     popt, ok, x_fit_dummy, y_fit_dummy = fit_psychometric_curve(
-                        samp_dataset[ANGLE_COL],
+                        samp_dataset[BIN_COL_N_MID],
                         samp_dataset[ACTION]  # action on current trial
                     )
 
@@ -148,18 +138,15 @@ for tr in transitions:
         # Analyses and bootstrap + plotting
         # -----------------------------
         boot_df = pd.DataFrame(boot_results)
+        boot_df_tr = boot_df[boot_df['tr_mode'] == tr]
 
         group_cols = ['rat', 'prev_bin']
-        g = boot_df.groupby(group_cols)
+        g = boot_df_tr.groupby(group_cols)
 
         summary = (
             g.agg(
                 mu_med     = ('mu', 'median'),
-                mu_low     = ('mu', lambda x: x.quantile(0.025)),
-                mu_high    = ('mu', lambda x: x.quantile(0.975)),
                 sigma_med  = ('sigma', 'median'),
-                sigma_low  = ('sigma', lambda x: x.quantile(0.025)),
-                sigma_high = ('sigma', lambda x: x.quantile(0.975)),
                 gamma_med  = ('gamma', 'median'),
                 lapse_med  = ('lapse', 'median'),
             )
@@ -178,17 +165,17 @@ for tr in transitions:
         axes = np.atleast_1d(axes).reshape(-1)
         # plotting finale
         x_fit = np.linspace(0, 90, 200)
-        color_by_bin, _   = fa.color_bin(bin_means_cur)
+        color_by_bin, green  = fa.color_bin(bin_means_cur)
 
         for ax, rat in zip(axes, boot_df[RAT_COL].unique()):
-            
+            #plt.figure()
             sub = summary[summary[RAT_COL] == rat]
             raw_r = dfc_tr[dfc_tr[RAT_COL] == rat]
-            popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[ANGLE_COL],raw_r[ACTION], min_trials=5)
+            popt_r, ok_r, x_fit_r, y_fit_r = fit_psychometric_curve(raw_r[BIN_COL_N_MID],raw_r[ACTION], min_trials=5)
             if ok_r:
                 ax.plot(x_fit_r, y_fit_r, color='black', alpha=0.8, ls='--')
             for _, row in sub.iterrows():
-                
+                #raw_r_b= dfc[(dfc[RAT_COL] == rat) & (dfc[BIN_COL_N_1] == row['prev_bin'])]
 
                 y_fit = cumulative_gaussian_lapse(
                     x_fit,
@@ -199,14 +186,20 @@ for tr in transitions:
                 )
 
                 prev_bin = row['prev_bin'] 
+                ''' 
+                if prev_bin == '45°':
+                    color = green
+                else: 
+                    color = color_by_bin[prev_bin]
+                ''' 
                 color = color_by_bin[prev_bin]
 
                 # -------------------------
-                # 2) CURVE BOOTSTRAP → pointwise CI
+                # 2) CURVE BOOTSTRAP → CI
                 # -------------------------
                 # all bootstraps of this rat/prev_bin combination
-                boot_sub = boot_df[(boot_df[RAT_COL] == rat) &
-                                (boot_df['prev_bin'] == prev_bin)]
+                boot_sub = boot_df_tr[(boot_df_tr[RAT_COL] == rat) &
+                                (boot_df_tr['prev_bin'] == prev_bin)]
 
                 # if we have enough bootstrap samples, we compute CI bands
                 if len(boot_sub) > 0:
@@ -227,19 +220,31 @@ for tr in transitions:
                         y_low,
                         y_high,
                         color=color,
-                        alpha=0.5,   # transparency
+                        alpha=0.1,   # transparency
                         linewidth=0
                     )
 
                 label = f"prev_bin {row['prev_bin']}"
                 ax.plot(x_fit, y_fit, color=color, alpha=0.9, label=label)
+                
+                #plt.plot(x_fit, y_fit, label=label, color = color)
+                #popt_r_b, ok_r_b, x_fit_r_b, y_fit_r_b = fit_psychometric_curve(raw_r_b[BIN_COL_N_MID],raw_r_b[ACTION], min_trials=5)
+                #if ok_r_b:
+                    #ax.plot(x_fit_r_b, y_fit_r_b, color='black', alpha=0.3, ls='--')
             
+            '''
+            plt.xlabel("Angle (bin midpoint)")
+            plt.ylabel("P(right)")
+            plt.legend()
+            plt.title("Bootstrap psychometric curves by rat and previous bin")
+            plt.show()
+            '''
             # decorations
             ax.axhline(0.5, color='k', ls='--', alpha=0.4)
             ax.axvline(45,  color='k', ls='--', alpha=0.4)
             ax.set_xlim(0, 90)
             ax.set_ylim(0, 1)
-            ax.set_title(f"Mod: {tr}, Rat {rat}, N = {n_samples_per_condition_80_list[rat]} samples")
+            ax.set_title(f"Mod: {tr}, Rat {rat}, N = samples")
             ax.set_xlabel('Current angle (deg)')
             ax.set_ylabel('P(action = 1)')
 
@@ -256,5 +261,23 @@ for tr in transitions:
 
         fig.suptitle(f'{tr}Bootstrapped Psychometric curves conditioned on previous-trial angle bin (per rat)',
                     y=1.06, fontsize=14)
+        
+        #------------------------------
+        # turn into a DataFrame
+        usage_df = (
+            pd.DataFrame
+            .from_dict(trial_usage, orient='index', columns=['n_uses'])
+            .reset_index()
+            .rename(columns={'index': TRIAL_ID_COL})
+        )
+
+        # attach some trial info (e.g. angle, rat, prev_bin)
+        trial_info = dfc[[TRIAL_ID_COL, RAT_COL, BIN_COL_N_1, ANGLE_COL]].drop_duplicates()
+        usage_df = usage_df.merge(trial_info, on=TRIAL_ID_COL, how='left')
+
+        # see the most overused trials
+        print(usage_df.sort_values('n_uses', ascending=False).head(20))
+#-------------------------------
 
         plt.show()
+

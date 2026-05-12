@@ -1,3 +1,8 @@
+# this scripts plots empirical p(repeat) curves conditioned on n-1 angle category transition (same vs different) for all rats, 
+# split by n-1 reward (hit vs miss). It also plots special points for the bias at current angle = 45° (ambiguous stimulus), split by previous category (H vs V).
+
+
+
 '''
 SAFELY CODING: 
 

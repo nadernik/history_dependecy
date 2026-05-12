@@ -1,4 +1,10 @@
 
+# This script performs bootstrapping of psychometric curve fits conditioned on previous-trial angle bins and with balanced n-1 choice (50/50 - V/H), per rat.
+# Angle 45 is excluded from this analysis. LAPSES ARE FIXED TO 0.02, as they are not the focus of this analysis and
+# we don't have enough data to reliably estimate them in each bootstrap sample when we are subsetting the data so much.
+# You can tweak some parameters at the top of the script, like how many bins compared, 
+# the number of bootstraps, or the minimum number of trials per condition to include a rat in the analysis.
+
 '''
 SAFELY CODING: 
 

@@ -23,7 +23,10 @@ git commit -m "progress" --> makes a local checkpoint in your branch.
 git push --> from the second time onwards
 
 '''
-
+# This script performs bootstrapping of psychometric curve fits conditioned on previous-trial angle bins and with balanced n-1 choice (50/50 - V/H), per rat.
+# Angle 45 is excluded from this analysis.
+# You can tweak some parameters at the top of the script, like how many bins compared, 
+# the number of bootstraps, or the minimum number of trials per condition to include a rat in the analysis.
 
 import numpy as np
 import pandas as pd
@@ -44,6 +47,11 @@ RAT_COL         = 'rat'               # subject/animal ID
 ACTION_N_1      = 'action_n-1'  # previous-trial response (0/1)
 ACTION          = 'action'    # current-trial response (0/1)
 
+#-----------------------------
+# ANALYSIS PARAMETERS
+#-----------------------------
+N_BOOT = 10
+N_BINS = 2
 # -----------------------------
 # LOAD + PREPROCESS
 # -----------------------------
@@ -51,8 +59,8 @@ an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
 an.load_and_preprocess_data()
 df_processed = an.create_lagged_features()
 
-df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=2, angle_col='angle_n-1', exclude_angle=45)
-df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=2, angle_col='angle', exclude_angle=45)
+df_processed, _ = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N_1, n_groups=N_BINS, angle_col='angle_n-1', exclude_angle=45)
+df_processed, angle_to_label   = fa.bin_by_unique_angles(df_processed, name_new_col=BIN_COL_N,   n_groups=N_BINS, angle_col='angle', exclude_angle=45)
 dfc = df_processed.dropna(subset=[BIN_COL_N_1, BIN_COL_N]).copy()
 
 
@@ -77,7 +85,7 @@ agg = (
 )
 
 # determine bottleneck: min number of trials on the less-sampled side (left/right) per rat and prev_bin
-agg['min_side_count'] = agg[['right_trials', 'left_trials']].min(axis=1)
+agg['min_side_count'] = agg[['right_trials', 'left_trials']].min(axis=1).astype(int)
 agg['min_side_action'] = (agg['right_trials'] < agg['left_trials']).astype(int)
 worst = (
     agg.sort_values('min_side_count')
@@ -90,7 +98,7 @@ print(f"Bottleneck (min side) per rat:{worst}")
 # -----------------------------
 # BOOTSTRAPPING PSYCHOMETRIC CURVE FITS
 # -----------------------------
-n_bootstraps = 1000
+n_bootstraps = N_BOOT
 boot_results = []
 n_samples_per_condition_80_list = {}
 n_samples_per_condition_list= {}
