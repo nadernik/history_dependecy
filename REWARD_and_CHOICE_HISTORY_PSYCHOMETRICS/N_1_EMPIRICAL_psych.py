@@ -1,4 +1,4 @@
-# plots empirical P(repeat) curves conditioned on n-1 angle, split by n-1 reward (hit vs miss). 
+# plots empirical P(V) curves conditioned on n-1 angle, split by n-1 reward (hit vs miss). 
 # to observe the dependence of trial n choice on trial n-1 angle split by reward state
 
 

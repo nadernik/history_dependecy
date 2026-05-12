@@ -1,3 +1,9 @@
+# evidence for repetition = signed distance of current angle from boundary, where sign depends on previous action
+#  (positive if n-1 action was "repeat" side, negative if n-1 action was "alternate" side)
+# this script plots empirical P(repeat) curves conditioned on evidence for repetition.
+# output = one plot with all rats together
+
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
