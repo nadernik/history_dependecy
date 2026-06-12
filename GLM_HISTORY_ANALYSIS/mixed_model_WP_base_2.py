@@ -1,3 +1,10 @@
+#TO DOs: 
+# - implement assumptions checks(normality of BLUPs, overdispersion, linearity of continuous predictors on logit scale).
+# - the fitted splines are doing their job? plot and see
+# - Temporal autocorrelation?
+# - how to visualize things
+
+
 # ============================================================
 # IMPORTS AND R ENVIRONMENT
 # ============================================================
@@ -37,7 +44,7 @@ ACTION_N1_COL = 'action_n-1'
 
 HISTORY_DEPTH  = 1
 RANDOM_SEED    = 42
-PSYCH_FRACTION = 1/3            # fraction of SESSIONS held out for psychometric fits
+PSYCH_FRACTION = 1/5            # fraction of SESSIONS held out for psychometric fits
 
 
 # ============================================================
@@ -46,12 +53,16 @@ PSYCH_FRACTION = 1/3            # fraction of SESSIONS held out for psychometric
 an = SerialDependenceAnalyzer(history_depth=HISTORY_DEPTH, save_figures=False)
 an.load_and_preprocess_data()
 df = an.create_lagged_features()
-df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2) # filter out training trials based on performance criterion (adjust as needed)
-
+df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2) 
+# filter out training trials based on performance criterion, 
+# the criterion of 80% is applied to easy angles only (0-15 & 75-90), and can be adjusted 
+# until psychometrics make empirical sense (no outliers at 0°/90°). 
+# This is important because training trials can be very different in their history patterns.
+# ADD A CHECK TO SEE THE CORRECTED PSYCHOMETRICS.
 print(f"Loaded {len(df)} trials, {df[RAT_COL].nunique()} rats")
 
 # ============================================================
-# 2. ★ NEW: SESSION-LEVEL SPLIT (psychometric vs model set)
+# 2. SESSION-LEVEL SPLIT (psychometric vs model set)
 # ─────────────────────────────────────────────────────────────
 # Why split by WHOLE SESSIONS and not by trials:
 #   Trials within a session share state (motivation, fatigue,
@@ -62,16 +73,16 @@ print(f"Loaded {len(df)} trials, {df[RAT_COL].nunique()} rats")
 # Why stratify by rat:
 #   Each rat must contribute to both sets, otherwise we lose rats.
 # ============================================================
-def split_sessions(df, psych_fraction=1/3, seed=RANDOM_SEED):
+def split_sessions(df, psych_fraction=1/5, seed=RANDOM_SEED):
     df = df.copy()
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(seed) # random number generator 
     df['split'] = ''
     for rat_id, rat_df in df.groupby(RAT_COL):
         sessions = rat_df[SESSION_COL].unique().copy()
         rng.shuffle(sessions)
         n_psych = max(1, int(round(len(sessions) * psych_fraction)))
         psych_sessions = set(sessions[:n_psych])
-        in_rat = df[RAT_COL] == rat_id
+        in_rat = df[RAT_COL] == rat_id # boolean mask for the current rat
         df.loc[in_rat & df[SESSION_COL].isin(psych_sessions),  'split'] = 'psych'
         df.loc[in_rat & ~df[SESSION_COL].isin(psych_sessions), 'split'] = 'model'
     print(f"  psych set: {(df['split']=='psych').sum():>7d} trials")
@@ -80,13 +91,14 @@ def split_sessions(df, psych_fraction=1/3, seed=RANDOM_SEED):
 
 df = split_sessions(df, psych_fraction=PSYCH_FRACTION, seed=RANDOM_SEED)
 # this just adds a coloumn for each trial with the value 'psych' or 'model' depending on the session it belongs to. 
-# This is used later to separate the data into two sets: one for fitting psychometric functions and one for fitting the mixed model.
+# This is used later to separate the data into two sets: 
+# one for fitting psychometric functions (acuity rank) and one for fitting the mixed model.
 
 # ============================================================
-# 3. PSYCHOMETRICS ON PSYCH SET → ACUITY RANK PER RAT
+# 3. PSYCHOMETRICS ON PSYCH SET → ACUITY RANK PER RAT # we can substitute this with the psychometric fits we already have.
 # ─────────────────────────────────────────────────────────────
-# Same cumulative-Gaussian-with-lapses fit as before, restricted
-# to the 1/3 of sessions reserved for it. From σ per rat per
+# Cumulative-Gaussian-with-lapses fit, restricted
+# to the 1/5 of sessions reserved for it. From σ per rat per
 # modality, we build an ordinal RANK (1=lowest acuity → 3=highest)
 # which becomes the basis for transition_dir and acuity_n1.
 # ============================================================
@@ -123,7 +135,7 @@ def fit_psychometric_per_rat(df_psych, n_bins=19):
                 print(f"  Rat {rat_id} mod {mod}: fit failed ({e})")
                 rows.append({'rat': rat_id, 'mod': mod, 'sigma': np.nan, 'fit_success': False})
     return pd.DataFrame(rows)
-
+    # psych_df
 
 def build_acuity_ranks(psych_df):
     """For each rat, rank modalities by 1/σ. Returns {rat: {mod: rank}}."""
@@ -131,7 +143,9 @@ def build_acuity_ranks(psych_df):
     for rat_id, sub in psych_df[psych_df['fit_success']].groupby('rat'):
         sub = sub.copy()
         sub['strength'] = 1 / sub['sigma']
-        sub['rank'] = sub['strength'].rank(method='dense').astype(int)
+        sub['rank'] = sub['strength'].rank(method='dense').astype(int) 
+        # rank the modalities for each rat based on their acuity (1/sigma), 
+        # the best modality gets rank 3, the worst gets rank 1, and ties get the same rank.
         ranks[rat_id] = dict(zip(sub['mod'], sub['rank']))
     return ranks
 
@@ -140,44 +154,42 @@ psych_df    = fit_psychometric_per_rat(df[df['split'] == 'psych'])
 acuity_rank = build_acuity_ranks(psych_df) # --> {
 #    rat_1: {mod_1: 3, mod_2: 1, mod_3: 2},
 #    rat_2: {mod_1: 2, mod_2: 3, mod_3: 1}
-#}, but mod_1 is just called 1 and so on for the others.
-# We have something like this for each rat, where the numbers are ranks of acuity (1=lowest, 3=highest) for each modality. 
+#    But mod_1 is just called 1 and so on for the others.
 print("\nAcuity ranks per rat (3 = best acuity for that rat):")
 print(pd.DataFrame(acuity_rank).T)
 
 
 # ============================================================
-# 4. ★ NEW: FEATURE ENGINEERING ON THE MODEL SET
+# 4. FEATURE ENGINEERING ON THE MODEL SET
 # ─────────────────────────────────────────────────────────────
-# Performed on the 2/3 sessions reserved for the mixed model.
+# Performed on the 4/5 sessions reserved for the mixed model.
 # Drops the first trial of each session (its n-1 is part of the warm up). Builds:
-#   success_n1 / failure_n1 — signed history (as before)
-#   hit_n1                  — unsigned outcome (NEW covariate)
-#   angle / angle_n1        — fixed -45 centering (as before)
+#   success_n1 / failure_n1 — signed history (as usual)
+#   hit_n1                  — unsigned outcome (covariate)
+#   angle / angle_n1        — fixed -45 centering (as usual)
 #   acuity_n1               — low/mid/high rank of n−1 modality
 #   transition_dir          — down/same/up rank comparison
 #   transition_cell         — full 9-level cell (for Formula 3)
 # ============================================================
 def engineer_features(df_in, acuity_rank):
     df = df_in.copy().sort_values([RAT_COL, SESSION_COL]).reset_index(drop=True)
-    df['_trial_in_sess'] = df.groupby([RAT_COL, SESSION_COL]).cumcount()
+    df['_trial_in_sess'] = df.groupby([RAT_COL, SESSION_COL]).cumcount() # this counts the trial number within each session, starting from 0.
     n_first = (df['_trial_in_sess'] == 0).sum()
-    df = df[df['_trial_in_sess'] > 0].drop(columns='_trial_in_sess')
-    print(f"  Dropped {n_first} first-of-session trials") # if trial number 0 repeats it's a problem with .cumcount()
-    # I am sure I can do this in a easier way.
+    df = df[df['_trial_in_sess'] > 0].drop(columns='_trial_in_sess') # drop first trial and drop the helper column
+    print(f"  Dropped {n_first} first-of-session trials") # if trial number repeats then 0 repeats and it's a problem with .cumcount()
 
     # signed action_n-1: ensure -1/+1 coding
     if df[ACTION_N1_COL].between(0, 1).all():
         df[ACTION_N1_COL] = df[ACTION_N1_COL] * 2 - 1
 
-    # signed history (as before)
+    # signed history
     df['success_n1'] = df[HIT_N1_COL]       * df[ACTION_N1_COL]
     df['failure_n1'] = (1 - df[HIT_N1_COL]) * df[ACTION_N1_COL]
 
-    # ★ NEW: unsigned outcome covariate
+    # unsigned outcome covariate
     df['hit_n1'] = df[HIT_N1_COL].astype(float)
 
-    # angle centering (as before)
+    # angle centering (as usual)
     df['angle']    = df[ANGLE_COL]    - 45.0
     df['angle_n1'] = df[ANGLE_N1_COL] - 45.0
 
@@ -190,7 +202,7 @@ def engineer_features(df_in, acuity_rank):
 
     # transition_dir
     def trans_dir(row):
-        rmap   = acuity_rank.get(row[RAT_COL], {}) # rmap = { 1: 1,   # T = low 2: 3,   # V = high3: 2    # VT = mid}
+        rmap   = acuity_rank.get(row[RAT_COL], {}) # rmap = { #T 1: 2,   #V 2: 1,   #VT 3: 3}
         r_prev = rmap.get(row[MOD_N1_COL])
         r_curr = rmap.get(row[MOD_COL])
         if r_prev is None or r_curr is None: return np.nan
@@ -199,7 +211,7 @@ def engineer_features(df_in, acuity_rank):
         return 'same'
     df['transition_dir'] = df.apply(trans_dir, axis=1)
 
-    # transition_cell (for Formula 3) --> but don't we have this already in the data? check if they are the same thing
+    # transition_cell (for Formula 3) --> here we could probably just use the existing col
     mod_label = {1: 'T', 2: 'V', 3: 'VT'}
     df['transition_cell'] = (
         df[MOD_N1_COL].map(mod_label).astype(str)
@@ -215,7 +227,7 @@ df_model = engineer_features(df[df['split'] == 'model'], acuity_rank)
 
 
 # ============================================================
-# 5. ★ NEW: SESSION-MEAN CENTERING (level-1 variables)
+# 5. SESSION-MEAN CENTERING (level-1 variables)
 # ─────────────────────────────────────────────────────────────
 # Centering each level-1 numeric predictor by its session mean
 # isolates the WITHIN-SESSION effect of each predictor. Without
@@ -225,8 +237,9 @@ df_model = engineer_features(df[df['split'] == 'model'], acuity_rank)
 def session_mean_center(df, cols, group=(RAT_COL, SESSION_COL)):
     df = df.copy()
     for c in cols:
-        sess_mean = df.groupby(list(group))[c].transform('mean') # transform applies the groupby mean back to the original dataframe, 
-                                                                 # so each trial gets the mean of its session.
+        sess_mean = df.groupby(list(group))[c].transform('mean') 
+        # transform applies the groupby mean back to the original dataframe, 
+        # so each trial gets the mean of its session.
         df[f'{c}_c'] = df[c] - sess_mean
     return df
 
@@ -237,8 +250,11 @@ df_model = session_mean_center(
 
 # create a way to check if the centering worked correctly by comparing the original and centered columns for a few sessions
 # or a plot of where session points are before and after centering. 
+# try model fitting with and without centering to see the difference in the results, 
+# especially in the failure:td_down interaction.
+
 # ============================================================
-# 6. ★ NEW: DUMMY CODING with chosen REFERENCE CATEGORIES
+# 6. DUMMY CODING with chosen REFERENCE CATEGORIES
 # ─────────────────────────────────────────────────────────────
 # transition_dir:  reference = 'same'  → coefs read as down-vs-same, up-vs-same
 # acuity_n1:       reference = 'mid'   → coefs read as low-vs-mid,  high-vs-mid
@@ -252,7 +268,9 @@ def make_dummies(df):
     df['ac_high'] = (df['acuity_n1'] == 'high').astype(int)
 
     cell_counts = df['transition_cell'].value_counts()
-    ref_cell    = cell_counts.idxmax() # we can set the reference category manually if we want, here it is T --> T because it is the most populated cell
+    ref_cell    = cell_counts.idxmax() 
+    # we can set the reference category manually if we want, here it is T --> T 
+    # because it is the most populated cell
     print(f"\n  transition_cell reference category: {ref_cell}")
     tc_dummies = []
     for cell in cell_counts.index:
@@ -266,7 +284,7 @@ df_model, ref_cell, transition_cell_dummies = make_dummies(df_model)
 
 
 # ============================================================
-# 7. ★ NEW: EMPIRICAL LOGIT DIAGNOSTIC PLOT
+# 7. EMPIRICAL LOGIT DIAGNOSTIC PLOT
 # ─────────────────────────────────────────────────────────────
 # Check linearity-on-logit assumption for continuous predictors.
 # Bin x into quantiles → mean(y) per bin → logit transform.
@@ -283,8 +301,9 @@ def empirical_logit_plot(df, x_col, y_col=ACTION_COL, n_bins=15, min_per_bin=30,
         x_center=(x_col, 'mean'), n=(y_col, 'size'), p=(y_col, 'mean')
     ).reset_index(drop=True)
     g = g[g['n'] >= min_per_bin].copy()
-    g['p_adj']     = (g['p'] * g['n'] + 0.5) / (g['n'] + 1)
-    g['emp_logit'] = np.log(g['p_adj'] / (1 - g['p_adj']))
+    g['p_adj']     = (g['p'] * g['n'] + 0.5) / (g['n'] + 1) # add 0.5 successes and 0.5 failures 
+    # to avoid 0 or 1 probabilities which would be a problem for the logit transform.
+    g['emp_logit'] = np.log(g['p_adj'] / (1 - g['p_adj'])) # log-odds for that bin.
     g['se_logit']  = np.sqrt(1 / (g['n'] * g['p_adj']) + 1 / (g['n'] * (1 - g['p_adj'])))
     if ax is None:
         fig, ax = plt.subplots(figsize=(7, 5))
@@ -299,9 +318,11 @@ def empirical_logit_plot(df, x_col, y_col=ACTION_COL, n_bins=15, min_per_bin=30,
     ax.legend(); plt.tight_layout()
     return g
 
+# For confirmation we can also fit the term as a spline and compare fit (e.g., AIC, likelihood ratio) 
+# against the linear version. TO DO
 
 # ============================================================
-# 8. ★ NEW: BASIS EXPANSION for angle / angle_n1 (tunable)
+# 8. BASIS EXPANSION for angle / angle_n1 (tunable)
 # ─────────────────────────────────────────────────────────────
 # 'linear'    : raw, 1 term
 # 'cubic'     : x + x³   (symmetric about 0, 2 terms)
@@ -397,7 +418,12 @@ MODEL_CONFIG = {
 # concerning, > 10 is a real problem. Concern here is whether
 # hit_n1_c is collinear with success_n1_c / failure_n1_c via
 # their interactions.
+
+# WORRYING VIFs - R² on others & VIF: 
+# success_n1_c 0.81  VIF: 5.15
+# angle_n1_c 0.77  VIF: 4.27
 # ============================================================
+
 def compute_vif(df_in, columns):
     """Compute VIF for each column by regressing it on all others."""
     from sklearn.linear_model import LinearRegression
@@ -601,7 +627,7 @@ if (!is.null(conv_msgs)) {
 }
 writeLines(meta_lines, file.path(out_dir, "meta.txt"))
 
-# NEW: write fitted probabilities (with random effects) per trial
+# Write fitted probabilities (with random effects) per trial
 fitted_p <- fitted(model)
 preds_df <- data.frame(
   fitted_p = fitted_p,
@@ -618,6 +644,13 @@ write.csv(preds_df, file.path(out_dir, "predictions.csv"), row.names = FALSE)
 cat("[", format(Sys.time()), "] Done\n", sep="")
 """
 
+# BLUPs are a reweighting of the residuals, with the reweighting set by the variance components.ù
+# But in our case (logistic) we use conditional modes, which are the modes of the posterior distribution of the random effects 
+# given the data and the fitted model.
+
+# One practical caveat worth knowing: the standard errors lme4 reports for BLUPs are conditional 
+# — they don't account for the uncertainty in σ_b² and β themselves — 
+# so treat per-rat BLUP confidence intervals as somewhat optimistic.
 
 # ============================================================
 # 11. ★ CHANGED: FIT VIA SUBPROCESS, REPORT FROM DICT
@@ -630,7 +663,7 @@ def _columns_in_formula(formula):
 
 def fit_model(df_model, config, transition_cell_dummies,
               rscript_exe=RSCRIPT_EXE,
-              output_dir=None):     # ★ NEW: optional permanent save location
+              output_dir=None):     
     """
     If output_dir is given, results are saved there permanently
     (and not deleted). Otherwise a temp dir is used and deleted at the end.
@@ -646,7 +679,7 @@ def fit_model(df_model, config, transition_cell_dummies,
 
     if output_dir is not None:
         tmpdir = Path(output_dir)
-        tmpdir.mkdir(parents=True, exist_ok=True)
+        tmpdir.mkdir(parents=True, exist_ok=True) # create the output directory if it doesn't exist and if exists, keep it
         cleanup = False
     else:
         tmpdir = Path(tempfile.mkdtemp(prefix='glmm_fit_'))
@@ -726,11 +759,11 @@ def report(result):
 input("\n>>> Press Enter to start the || refit (will take 1-2h)... ")
 
 MODEL_CONFIG['FORMULA'] = 3
-result_1_uncorr = fit_model(
+result_3_uncorr = fit_model(
     df_model, MODEL_CONFIG, transition_cell_dummies,
     output_dir=r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\formula3_uncorrelated_try_more_random'
 )
-report(result_1_uncorr)
+report(result_3_uncorr)
 
 # ============================================================
 # ★ DIAGNOSTIC — model predictions vs raw probabilities per cell
@@ -802,5 +835,7 @@ summary = (
                 n=('raw_slope', 'count')
             )
 )
-
+# here we are pooling across rats
 print(summary.round(4))
+
+
