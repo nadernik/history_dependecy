@@ -164,3 +164,6 @@ results_*
 
 # Log files
 *.log
+
+# Personal drafts and experiments
+others/

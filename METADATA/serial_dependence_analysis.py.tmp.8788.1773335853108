@@ -51,20 +51,11 @@ from sklearn.model_selection import cross_val_score, GroupKFold
 from scipy.optimize import minimize
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from functions_Ale import plot_angle_diagnostics
-from joblib import Parallel, delayed
-import re
+
+
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
-
-
-# Module-level function for parallel bootstrap fitting (must be outside class for pickling)
-def fit_bootstrap(X, y, idx):
-    """Fit one bootstrap resample — runs in a worker process."""
-    m = LogisticRegression(penalty='l2', C=1.0, max_iter=1000, random_state=42)
-    m.fit(X[idx], y[idx])
-    return m.coef_[0]   # shape (n_features,)
 
 
 class AnalysisLogger:
@@ -482,7 +473,7 @@ class SerialDependenceAnalyzer:
             trial_dict = {}
             for field in trial_data.dtype.names:
                 trial_dict[field] = trial_data[field][0].flatten()
-
+            
             # Create DataFrame
             self.df = pd.DataFrame(trial_dict)
             
@@ -511,60 +502,17 @@ class SerialDependenceAnalyzer:
             
             self.df['hitmiss'] = self.df['hitmiss'].astype(int)
             self.df = self.df[self.df['hitmiss'].isin([0, 1])]
-
-            # 1. How many trials are above 90° (i.e. actually get folded) per rat? HERE ALE
-            print("Trials with angle > 90° per rat (these get folded):")
-            print(self.df[self.df['angle'] > 90].groupby('rat').size()
-                .rename("n_folded").to_frame()
-                .assign(pct=lambda x: 100 * x['n_folded'] / self.df.groupby('rat').size()))
-
-            # 2. Raw angle histogram per rat to see the full shape HERE ALE
-            '''
-            max_count = 0
-            for _, sub in self.df.groupby('rat'):
-                counts, _ = np.histogram(sub['angle'], bins=36)
-                max_count = max(max_count, counts.max())
-            fig, axes = plt.subplots(3, 4, figsize=(16, 10), facecolor="#1A1A2E")
-            for ax, (rat, sub) in zip(axes.flatten(), self.df.groupby('rat')):
-                ax.hist(sub['angle'], bins=36, color="#5B8DB8", edgecolor="#1A1A2E")
-                ax.axvline(90,  color="#E07B6A", linewidth=1.2, linestyle="--", label="90°")
-                ax.axvline(180, color="#F5B97F", linewidth=1.2, linestyle="--", label="180°")
-                ax.set_title(f"Rat {int(rat)}", color="white", fontsize=10)
-                ax.set_facecolor("#12122A")
-                ax.set_ylim(0, max_count)
-                ax.tick_params(colors="#AAAACC")
-                for spine in ax.spines.values(): spine.set_edgecolor("#333355")
-            for ax in axes.flatten()[len(self.df['rat'].unique()):]:
-                ax.set_visible(False)
-            axes[0,0].legend(fontsize=7, labelcolor="white", facecolor="#2A2A4A", edgecolor="#555577")
-            fig.suptitle("Raw angle distribution per rat — BEFORE folding", color="white",
-                        fontsize=13, fontweight="bold")
-            plt.tight_layout()
-            plt.show()
-            '''
-
+            
             # Angle processing
             if fold:
-                
                 self.df['angle'] = self.df['angle'].astype(float)
                 self.df.loc[self.df['angle'] > 180, 'angle'] = self.df.loc[self.df['angle'] > 180, 'angle'] - 180
-                #self.df.loc[self.df['angle'] > 90, 'angle'] = (90 - (self.df.loc[self.df['angle'] > 90, 'angle'] - 90)) + 90
-                # Step 2: reflect (90, 180] onto [0, 90]
+                self.df.loc[self.df['angle'] > 90, 'angle'] = (90 - (self.df.loc[self.df['angle'] > 90, 'angle'] - 90)) + 90
                 
-                #plot_angle_diagnostics(self.df, title="Unique angles folding STEP 1")
-                self.df.loc[self.df['angle'] > 90, 'angle'] = 180 - self.df.loc[self.df['angle'] > 90, 'angle']
-                #plot_angle_diagnostics(self.df, title="Unique angles folding STEP 2")
-
                 # Filter angles and modalities
-                n_before = len(self.df)
                 self.df = self.df[(self.df['angle'] >= 0) & (self.df['angle'] <= 90)]
-                n_dropped = n_before - len(self.df)
-                if n_dropped > 0:
-                    print(f"WARNING: {n_dropped} trials dropped by angle filter after folding")
-                #self.df = self.df[(self.df['angle'] >= 0) & (self.df['angle'] <= 90)]
-            self.df = self.df[self.df['mod'] != 4]  # Exclude control
-
-            #plot_angle_diagnostics(self.df, title="Unique angles BEFORE folding")
+                self.df = self.df[self.df['mod'] != 4]  # Exclude control
+            
             
             # Handle reversed rule rats
             for rat_id in self.rev_rule_rats:
@@ -587,7 +535,7 @@ class SerialDependenceAnalyzer:
             print(f"Data loading failed: {e}")
             return None
     
-    def create_lagged_features(self, nan_specific_cols=None):
+    def create_lagged_features(self):
         """Create lagged features"""
         print(f"\n=== STEP 2: CREATING LAGGED FEATURES (k={self.k}) ===")
         
@@ -624,50 +572,7 @@ class SerialDependenceAnalyzer:
             
             # Remove rows with NaN values
             print("Removing trials without sufficient history...")
-            # CHANGEEES START, to compare to office pc
-            # Strategy 1: aggressive
-            
-            df_drop_all = df_lag.dropna().copy()
-            
-            # Strategy 2: targeted
-            required_cols = []
-            for i in range(1, self.k + 1):
-                required_cols.extend([
-                    f'action_n-{i}', f'angle_n-{i}', f'hitmiss_n-{i}',
-                    f'mod_n-{i}', f'difficulty_n-{i}', f'hit_n-{i}', f'miss_n-{i}',
-                    f'mod_transition_n-{i}'
-                ])
-
-            df_drop_targeted = df_lag.dropna(subset=required_cols).copy()
-            
-            # Basic comparison
-            print("\n=== DROP STRATEGY COMPARISON ===")
-            print(f"Original rows:            {len(df_lag)}")
-            print(f"dropna() rows kept:       {len(df_drop_all)}")
-            print(f"targeted drop rows kept:  {len(df_drop_targeted)}")
-            print(f"Extra rows kept by targeted: {len(df_drop_targeted) - len(df_drop_all)}")
-
-            # Which rows are lost only by aggressive dropna()?
-            idx_all = set(df_drop_all.index)
-            idx_targeted = set(df_drop_targeted.index)
-            extra_targeted_idx = sorted(idx_targeted - idx_all)
-
-            print(f"\nRows dropped ONLY by dropna(): {len(extra_targeted_idx)}")
-            if len(extra_targeted_idx) > 0:
-                cols_to_show = ['rat', 'date', 'trialID', 'trial_number', 'action', 'hitmiss', 'mod', 'angle']
-                cols_to_show = [c for c in cols_to_show if c in df_lag.columns]
-                print(df_lag.loc[extra_targeted_idx, cols_to_show].head(20))
-
-            if len(extra_targeted_idx) > 0:
-                print("\nNaN counts in rows dropped only by aggressive dropna():")
-                nan_counts = df_lag.loc[extra_targeted_idx].isna().sum().sort_values(ascending=False)
-                print(nan_counts[nan_counts > 0].head(20))
-
-                print("\nColumns containing NaNs in those extra-dropped rows:")
-                cols_with_nans = df_lag.loc[extra_targeted_idx].columns[df_lag.loc[extra_targeted_idx].isna().any()]
-                print(list(cols_with_nans))
-            #df_lag = df_lag.dropna()
-            # CHANGEEES END
+            df_lag = df_lag.dropna()
             
             self.df_processed = df_lag
             
@@ -1245,90 +1150,50 @@ class SerialDependenceAnalyzer:
         return rat_results
 
 # this is new from the 2024-06 update, the next two function implement 1) cross-validation and 2) a modified version of your analyze_individual_rats, which takes features as input to create different models.
-    def cross_validate(self, rat_data, cont_values, bin_values,
-                    N_SPLITS=5, scaling='cont_only'):
-        """
-        Parameters
-        ----------
-        scaling : str
-            'cont_only' — StandardScaler on continuous columns only, binary passed through.
-            'all'       — StandardScaler on all columns.
-            'none'      — No scaling, everything passed through as-is.
-        """
-        has_cont = len(cont_values) > 0
-        has_bin  = len(bin_values)  > 0
+    def cross_validate(self, rat_data, cont_values, bin_values, N_SPLITS=5, binary=False):
+            """Perform cross-validated logistic regression for a single rat with these imports
+            from sklearn.pipeline import Pipeline
+            from sklearn.compose import ColumnTransformer
+            from sklearn.model_selection import GroupKFold, cross_val_score"""
+            
+            # Build X and track which columns are continuous/binary
+            X_cont= np.column_stack([f for f in cont_values ])
+            if binary:
+                X_bin= np.column_stack([f for f in bin_values ])
+            
+            if binary:
+                X = np.column_stack([X_cont, X_bin])
+            else:
+                X = X_cont
+                
+            y = rat_data['action'].values
+            groups = rat_data['date'].values   # this ensures that all trials from the same session are in the same fold and there is no leakfrom training to leak data
 
-        # ----------------------------------------------------------------
-        # 1. Build X — always [X_cont | X_bin] when both exist
-        # ----------------------------------------------------------------
-        if has_cont:
-            X_cont = np.column_stack(cont_values)
-        if has_bin:
-            X_bin = np.column_stack(bin_values)
-
-        if has_cont and has_bin:
-            X = np.column_stack([X_cont, X_bin])
-        elif has_cont:
-            X = X_cont
-        elif has_bin:
-            X = X_bin
-        else:
-            print("  WARNING: no features passed to cross_validate!")
-            return None
-
-        y      = rat_data['action'].values
-        groups = rat_data['date'].values
-
-        # ----------------------------------------------------------------
-        # 2. Preprocessing pipeline — mirrors scaling logic in analyze_individual_rats_ale
-        # ----------------------------------------------------------------
-        n_cols = X.shape[1]
-
-        if scaling == 'cont_only' and has_cont and has_bin:
-            n_cont   = X_cont.shape[1]
+            n_cont = X_cont.shape[1]
             cont_idx = list(range(n_cont))
-            bin_idx  = list(range(n_cont, n_cols))
+            bin_idx  = list(range(n_cont, X.shape[1]))
+
             preprocess = ColumnTransformer(
                 transformers=[
                     ("cont", StandardScaler(), cont_idx),
-                    ("bin",  "passthrough",    bin_idx),
+                    ("bin", "passthrough", bin_idx),
                 ],
                 remainder="drop"
             )
-        elif scaling == 'all':
-            preprocess = ColumnTransformer(
-                transformers=[("all", StandardScaler(), list(range(n_cols)))],
-                remainder="drop"
-            )
-        else:  # 'none', or 'cont_only' with only one feature type present
-            preprocess = ColumnTransformer(
-                transformers=[("all", "passthrough", list(range(n_cols)))],
-                remainder="drop"
-            )
 
-        pipe = Pipeline([
-            ("preprocess", preprocess),
-            ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=1000, random_state=42)),
-        ])
+            pipe = Pipeline([
+                ("preprocess", preprocess),
+                ("clf", LogisticRegression(penalty="l2", C=1.0, max_iter=1000, random_state=42)),
+            ])
 
-        # ----------------------------------------------------------------
-        # 3. Cross-validation
-        # ----------------------------------------------------------------
-        if pd.Series(groups).nunique() < N_SPLITS:
-            raise ValueError(
-                f"Not enough groups for CV: {pd.Series(groups).nunique()} groups, need {N_SPLITS}"
-            )
+            cv = GroupKFold(n_splits=N_SPLITS)
+            scores = cross_val_score(pipe, X, y, cv=cv, groups=groups)
+            
+            scores_dict = {f'fold_{i}': scores[i] for i in range(len(scores))} | {'score_mean': scores.mean(), 'score_std': scores.std(), 'rat_id': rat_data['rat'].iloc[0]}
 
-        cv     = GroupKFold(n_splits=N_SPLITS)
-        scores = cross_val_score(pipe, X, y, cv=cv, groups=groups)
-        print(f'scores check: {scores.mean}, scores_std: {scores.std}')
-        return (
-            {f'fold_{i}': scores[i] for i in range(len(scores))}
-            | {'score_mean': scores.mean(), 'score_std': scores.std(),
-            'rat_id': rat_data['rat'].iloc[0]}
-        )
+            return scores_dict
 
-        
+    
 
     def calculate_model_criteria(self, model, X, y):
         """Calculate AIC and BIC for a fitted scikit-learn LogisticRegression model"""
@@ -1351,7 +1216,7 @@ class SerialDependenceAnalyzer:
 
 
 
-    def analyze_individual_rats_ale(self, df_processed = None,  features_keys=None, k=None, include_mod=False):
+    def analyze_individual_rats_ale(self, df_processed = None,  features_keys=None, k=None):
         """Analyze each rat individually"""
         '''
         
@@ -1365,11 +1230,8 @@ class SerialDependenceAnalyzer:
         
         for rat_id in rats:
             print(f"\nAnalyzing Rat {rat_id}...")
-            
             rat_data = df_processed[df_processed['rat'] == rat_id].copy()
-            cols_needed = ['action', 'date'] + features_keys
-            rat_data = rat_data[cols_needed].dropna().copy()   
-
+  
             if len(rat_data) < 50:  # Minimum data requirement
                 print(f"  Insufficient data for Rat {rat_id} ({len(rat_data)} trials)")
                 continue
@@ -1381,30 +1243,12 @@ class SerialDependenceAnalyzer:
                 cont_names = []
                 bin_names = []
                 
-                # Current trial features, always include angle
-                if 'angle' in features_keys:
-                    cont_values.append(rat_data['angle'].values)
-                    cont_names.append('angle')
-                if 'angle_cat' in features_keys:
-                    bin_values.append(rat_data['angle_cat'].values.astype(float))
-                    bin_names.append('angle_cat')
-                if 'angle_visuotactile'in features_keys: 
-                    bin_values.append(rat_data['angle_visuotactile'].values.astype(float))
-                    bin_names.append('angle_visuotactile')
-                if 'angle_tactile'in features_keys: 
-                    bin_values.append(rat_data['angle_tactile'].values.astype(float))
-                    bin_names.append('angle_tactile')
-                # One-hot encode current modality
-                if include_mod:
-                    for mod in [1, 2]: # mod_3 (visuotactile) is the reference
-                        mod_feature = (rat_data['mod'] == mod).astype(int)
-                        bin_values.append(mod_feature.values)
-                        bin_names.append(f'mod_{mod}')
+                # Current trial features, laways include angle
+                cont_values.append(rat_data['angle'].values)
+                cont_names.append('angle')
+                
                 # History features
                 for i in range(1, self.k + 1):
-                    if f'angle_n-{i}_cat' in features_keys:
-                        bin_values.append(rat_data[f'angle_n-{i}_cat'].values.astype(float))
-                        bin_names.append(f'angle_n-{i}_cat')
                     if f'angle_n-{i}' in features_keys:
                         cont_values.append(rat_data[f'angle_n-{i}'].values.astype(float))
                         cont_names.append(f'angle_n-{i}')
@@ -1423,15 +1267,6 @@ class SerialDependenceAnalyzer:
                     if f'failure_n-{i}' in features_keys:
                         bin_values.append(rat_data[f'failure_n-{i}'].values.astype(float))
                         bin_names.append(f'failure_n-{i}')
-                    if f'hit_n-{i}' in features_keys: 
-                        bin_values.append(rat_data[f'hit_n-{i}'].values.astype(float))
-                        bin_names.append(f'hit_n-{i}')
-                    if f'miss_n-{i}' in features_keys:
-                        bin_values.append(rat_data[f'miss_n-{i}'].values.astype(float))
-                        bin_names.append(f'miss_n-{i}')
-                    if f'hitmiss_n-{i}' in features_keys: 
-                        bin_values.append(rat_data[f'hitmiss_n-{i}'].values.astype(float))
-                        bin_names.append(f'hitmiss_n-{i}')
 
 
 
@@ -1444,8 +1279,8 @@ class SerialDependenceAnalyzer:
             
                 # Stack features
                 # Separate continuous and binary features
-                if cont_names:    # numpy idiomatic way to check if we have any continuous features
-                    X_cont= np.column_stack([f for f in cont_values ])
+
+                X_cont= np.column_stack([f for f in cont_values ])
                 if binary:
                     X_bin= np.column_stack([f for f in bin_values ])
                 # --------------------------------
@@ -1460,7 +1295,7 @@ class SerialDependenceAnalyzer:
                 '''
                 # --------------------------------
                 # scale all
-                '''
+                
                 if binary:
                     X = np.column_stack([X_cont, X_bin])
                     print(f"rat {rat_id}, before scaling, feature names {cont_names + bin_names}")
@@ -1471,18 +1306,9 @@ class SerialDependenceAnalyzer:
                 X_scaled = scaler.fit_transform(X)
 
                 X = X_scaled
-                '''
+                
                 # --------------------------------
-                # scale none (everything is binary)
-                if binary:
-                    X = X_bin
-                    scaler = None
-
-
-
-
-
-                # --------------------------------
+                    
                 y = rat_data['action'].values
                 
                 # Fit individual model
@@ -1501,19 +1327,10 @@ class SerialDependenceAnalyzer:
                 
 
                 # Calculate cross-validated accuracy
-                scores_df = self.cross_validate(rat_data, cont_values, bin_values, N_SPLITS=5, binary=binary, scale_binary=True)
-                
-                # With this, derived AFTER building X:
-                if binary and cont_names:
-                    features_names = cont_names + bin_names  # both went into X
-                elif binary:
-                    features_names = bin_names               # only bin went into X (current case)
-                else:
-                    features_names = cont_names              # only cont went into X
-                #features_names = cont_names + bin_names if binary else cont_names
+                scores_df = self.cross_validate(rat_data, cont_values, bin_values, N_SPLITS=5, binary=binary)
+                features_names = cont_names + bin_names if binary else cont_names
                 # 1. Calculate the criteria
                 aic, bic, log_lik = self.calculate_model_criteria(model, X, y)
-              
                 #print(f"rat {rat_id}, feature names {features_names} model.intercept_ = {model.intercept_}")
                 # Store results
                 rat_results[rat_id] = {
@@ -1536,297 +1353,90 @@ class SerialDependenceAnalyzer:
                 print(f"  Rat {rat_id}: {len(rat_data)} trials, accuracy = {train_accuracy:.3f}")
                 
             except Exception as e:
+                
+                print(traceback.format_exc())
 
                 print(f"  Error analyzing Rat {rat_id}: {e}")
         
         print(f"\nSuccessfully analyzed {len(rat_results)} rats")
         return rat_results
 
-    def analyze_individual_rats_ale_N(
-        self,
-        df_processed=None,
-        features_keys=None,
-        k=None,
-        include_mod=False,
-        scaling='cont_only',   # 'cont_only' | 'all' | 'none'
-        cv_split= True, 
-    ):
-        """Analyze each rat individually.
-
+    def bootstrap_pvalues(self, rat_results, n_iterations=1000, random_state=42):
+        """
+        Estimate p-values for each coefficient via permutation bootstrap.
+        For each rat and each feature, shuffles y n_iterations times,
+        refits the same sklearn model, and computes p-value as the fraction
+        of null coefficients >= the observed coefficient.
+        
         Parameters
         ----------
-        scaling : str
-            'cont_only' — StandardScaler on continuous features only, binary left as-is.
-            'all'       — StandardScaler on the full X matrix (cont + bin stacked).
-            'none'      — No scaling.
-        """
-
-         # Precompile once — used inside analyze_individual_rats_ale
-        _HIST_CONT_PATTERN = re.compile(
-            r'^(angle_n-\d+|angle_hit_n-\d+|angle_miss_n-\d+|'
-            r'H_action_n-\d+_ambiguity|H_success_n-\d+_ambiguity|'
-            r'H_failure_n-\d+_ambiguity|H_angle_n-\d+_ambiguity)$'
-        )
-        _HIST_BIN_PATTERN = re.compile(
-            r'^(angle_n-\d+_cat|action_n-\d+|success_n-\d+|'
-            r'failure_n-\d+|hit_n-\d+|miss_n-\d+|hitmiss_n-\d+|'
-            r'miss_hit_n-\d+)$'
-        )
-
-        # Current-trial feature sets (no lag suffix)
-        _CURR_CONT_KEYS = {'angle', 'angle_hit_n-1', 'angle_miss_n-1', 'angle_tactile', 'angle_visuotactile'} # I think angle hit and angle miss should not exist, they are too much info
-        _CURR_BIN_KEYS  = {'angle_cat', 'angle_cat_tactile', 'angle_cat_visuotactile', 'tactile', 'visuotactile'}
-
-
-        VALID_SCALING = ('cont_only', 'all', 'none')
-        if scaling not in VALID_SCALING:
-            raise ValueError(f"`scaling` must be one of {VALID_SCALING}, got {scaling!r}")
-
-        print(f"\n=== INDIVIDUAL RAT ANALYSIS (scaling={scaling!r}) ===")
-
-        rats = sorted(df_processed['rat'].unique())
-        rat_results = {}
-        print(f"Analyzing {len(rats)} rats individually...")
-
-        for rat_id in rats:
-            print(f"\nAnalyzing Rat {rat_id}...")
-
-            rat_data = df_processed[df_processed['rat'] == rat_id].copy()
-            cols_needed = ['action', 'date'] + features_keys + ['rat']
-            rat_data = rat_data[cols_needed].dropna().copy()
-
-            if len(rat_data) < 50:
-                print(f"  Insufficient data for Rat {rat_id} ({len(rat_data)} trials)")
-                continue
-
-            #try:
-                # ----------------------------------------------------------------
-                # 1. Sort features_keys into continuous vs binary — one pass
-                # ----------------------------------------------------------------
-            cont_values, cont_names = [], []
-            bin_values,  bin_names  = [], []
-
-            for key in features_keys:
-                # -- Current-trial features --
-                if key in _CURR_CONT_KEYS:
-                    cont_values.append(rat_data[key].values.astype(float))
-                    cont_names.append(key)
-                elif key in _CURR_BIN_KEYS:
-                    bin_values.append(rat_data[key].values.astype(float))
-                    bin_names.append(key)
-                # -- History features (regex handles any lag number) --
-                elif _HIST_CONT_PATTERN.match(key):
-                    cont_values.append(rat_data[key].values.astype(float))
-                    cont_names.append(key)
-                elif _HIST_BIN_PATTERN.match(key):
-                    bin_values.append(rat_data[key].values.astype(float))
-                    bin_names.append(key)
-
-            # -- Modality dummies (added separately, not in features_keys) --
-            if include_mod:
-                for mod in [1, 2]:   # mod_2 (visuo) is the reference
-                    bin_values.append((rat_data['mod'] == mod).astype(int).values)
-                    bin_names.append(f'mod_{mod}')
-
-            has_cont   = len(cont_names) > 0
-            has_binary = len(bin_names)  > 0
-
-            # ----------------------------------------------------------------
-            # 2. Always build X = [X_cont | X_bin] (nothing silently dropped)
-            # ----------------------------------------------------------------
-            if has_cont:
-                X_cont = np.column_stack(cont_values)
-            if has_binary:
-                X_bin  = np.column_stack(bin_values)
-
-            # features_names always mirrors column order in X
-            features_names = cont_names + bin_names
-
-            # ----------------------------------------------------------------
-            # 3. Apply scaling according to the `scaling` parameter
-            # ----------------------------------------------------------------
-            scaler = None
-
-            if scaling == 'cont_only':
-                if has_cont:
-                    #scaler = StandardScaler()
-                    scaler = StandardScaler(with_mean=False) # as angle is already centered at 0 in a meaningfull way
-                    X_cont_scaled = scaler.fit_transform(X_cont)
-                    X = np.column_stack([X_cont_scaled, X_bin]) if has_binary else X_cont_scaled
-                else:
-                    X = X_bin   # nothing to scale
-
-            elif scaling == 'all':
-                if has_cont and has_binary:
-                    X_raw = np.column_stack([X_cont, X_bin])
-                elif has_cont:
-                    X_raw = X_cont
-                else:
-                    X_raw = X_bin
-                scaler = StandardScaler()
-                X = scaler.fit_transform(X_raw)
-
-            else:  # scaling == 'none'
-                if has_cont and has_binary:
-                    X = np.column_stack([X_cont, X_bin])
-                elif has_cont:
-                    X = X_cont
-                else:
-                    X = X_bin
-
-            # ----------------------------------------------------------------
-            # 4. Target + model fit
-            # ----------------------------------------------------------------
-            y = rat_data['action'].values
-
-            model = LogisticRegression(
-                penalty='l2',
-                C=1.0,
-                max_iter=1000,
-                random_state=42,
-            )
-            model.fit(X, y)
-
-            train_accuracy = model.score(X, y)
-            if cv_split:
-                scores_df = self.cross_validate(
-                    rat_data,
-                    cont_values,
-                    bin_values,
-                    N_SPLITS=5,
-                    scaling=scaling,
-                )
-            else: 
-                scores_df = None
-
-            aic, bic, log_lik = self.calculate_model_criteria(model, X, y)
-
-            rat_results[rat_id] = {
-                'data':                    rat_data,
-                'model':                   model,
-                'scaler':                  scaler,
-                'scaling':                 scaling,
-                'feature_names':           features_names,
-                'train_accuracy':          train_accuracy,
-                'n_trials':                len(rat_data),
-                'coefficients':            model.coef_[0],
-                'X':                       X,
-                'y':                       y,
-                'cross_validation_scores': scores_df,
-                'aic':                     aic,
-                'bic':                     bic,
-                'log_likelihood':          log_lik,
-            }
-
-            print(f"  Rat {rat_id}: {len(rat_data)} trials, accuracy = {train_accuracy:.3f}")
-
-        #except Exception as e:
-            #print(f"  Error analyzing Rat {rat_id}: {e}")
-
-            print(f"\nSuccessfully analyzed {len(rat_results)} rats")
-        return rat_results
-
-    def bootstrap_ci(self, rat_results, n_iterations=1000, ci=95,
-                    random_state=42, n_jobs=4):
-        """
-        Estimate confidence intervals for each coefficient via bootstrap resampling.
-
-        Each iteration resamples (X, y) rows with replacement and refits the model.
-        Significance is defined as the CI not containing zero — no p-value threshold needed.
-
-        Parameters
-        ----------
-        rat_results  : dict   — output of analyze_individual_rats_ale()
-        n_iterations : int    — number of bootstrap resamples (1000 solid; 5000 for publication)
-        ci           : float  — confidence level in percent (default 95 → 2.5th/97.5th percentile)
+        rat_results : dict
+            Output of analyze_individual_rats_ale()
+        n_iterations : int
+            Number of permutations (1000 is solid; 5000 for publication)
         random_state : int
-        n_jobs       : int    — parallel workers (-1 = all cores; 4 = safe on shared servers)
-
+        
         Returns
         -------
-        ci_df : pd.DataFrame
-            Long-format with columns:
-            rat_id, feature, beta_real, ci_low, ci_high, significant
+        pval_df : pd.DataFrame
+            Long-format dataframe with columns:
+            rat_id, feature, beta_real, p_value, significant
         """
         rng = np.random.default_rng(random_state)
-        alpha = (100 - ci) / 2          # e.g. ci=95 → alpha=2.5
         all_rows = []
 
         for rat_id, d in rat_results.items():
-            X          = d['X']
-            y          = d['y']
-            coef_real  = d['coefficients']    # shape (n_features,)
+            X         = d['X']           # already scaled, same matrix used for fitting
+            y         = d['y']
+            coef_real = d['coefficients']          # shape (n_features,)
             feat_names = d['feature_names']
-            rat_data   = d['data']
-            n_trials   = len(y)
 
-            print(f"Bootstrapping Rat {rat_id} ({n_iterations} iterations, n_jobs={n_jobs})...")
+            print(f"Bootstrapping Rat {rat_id} ({n_iterations} iterations)...")
 
-            # ----------------------------------------------------------------
-            # 1. Generate all resample index sets at once
-            #    shape (n_iterations, n_trials) — each row is one bootstrap draw
-            # ----------------------------------------------------------------
-            #boot_indices = rng.integers(0, n_trials, size=(n_iterations, n_trials))
-            sessions = rat_data['date'].unique()
-            n_sessions = len(sessions)
-            boot_sessions = rng.integers(0, n_sessions, size=(n_iterations, n_sessions))
-            session_to_rows = {s: np.where(rat_data['date'] == s)[0] for s in sessions}
+            # --- build null distribution ---
+            null_coefs = np.zeros((n_iterations, len(feat_names)))
 
-            # ----------------------------------------------------------------
-            # 2. Fit models in parallel, one per resample
-            # ----------------------------------------------------------------
-            #boot_coefs = np.array(
-            #    Parallel(n_jobs=n_jobs)(
-            #        delayed(fit_bootstrap)(X, y, boot_indices[it])
-            #        for it in range(n_iterations)
-            #    )
-            #)   # shape (n_iterations, n_features)
-            boot_coefs = np.array(
-                Parallel(n_jobs=n_jobs)(
-                    delayed(fit_bootstrap)(
-                        X, y,
-                        np.concatenate([session_to_rows[sessions[s]] for s in boot_sessions[it]])
-                    )
-                    for it in range(n_iterations)
+            for it in range(n_iterations):
+                y_perm = rng.permutation(y)        # shuffle y, keep X intact
+                null_model = LogisticRegression(
+                    penalty='l2',
+                    C=1.0,
+                    max_iter=1000,
+                    random_state=42
                 )
-            )
-            # ----------------------------------------------------------------
-            # 3. CI from percentiles — one broadcasting expression per bound
-            # ----------------------------------------------------------------
-            ci_low, ci_high = np.percentile(boot_coefs, [alpha, 100 - alpha], axis=0)
-            # shape (n_features,) each
+                null_model.fit(X, y_perm)
+                null_coefs[it] = null_model.coef_[0]
 
-            # significant if the CI excludes zero
-            significant = (ci_low > 0) | (ci_high < 0)
-
+            # --- compute p-values ---
             for j, feat in enumerate(feat_names):
+                beta_real = coef_real[j]
+                # two-tailed: how often is |null| >= |real|?
+                p_val = np.mean(np.abs(null_coefs[:, j]) >= np.abs(beta_real))
                 all_rows.append({
                     'rat_id':      rat_id,
                     'feature':     feat,
-                    'beta_real':   coef_real[j],
-                    'ci_low':      ci_low[j],
-                    'ci_high':     ci_high[j],
-                    'significant': significant[j],
+                    'beta_real':   beta_real,
+                    'p_value':     p_val,
+                    'significant': p_val < 0.05
                 })
 
-        return pd.DataFrame(all_rows)
+        pval_df = pd.DataFrame(all_rows)
+        return pval_df
 
-    def plot_bootstrap_ci(self, beta_df, ci_df, model_label="", beta_cols=None):
-
+    def plot_bootstrap_pvalues(self, beta_df, pval_df, model_label="", beta_cols=None):
+        
         """
-        Heatmap of betas with asterisks where the bootstrap CI excludes zero.
-
+        Heatmap of betas with asterisks where p < 0.05.
+        Replaces the original beta heatmap + p-value heatmap with a single plot.
+        
         Parameters
         ----------
-        beta_df     : pd.DataFrame — rats x features, contains beta_ columns
-                                        (from flatten_model_results)
-        ci_df       : pd.DataFrame — long-format output of bootstrap_ci()
-        model_label : str          — title prefix
-        beta_cols   : list         — ordered list of beta columns to display
+        beta_df   : pd.DataFrame  — rats × features, contains beta_ columns (from flatten_model_results)
+        pval_df   : pd.DataFrame  — long format output of bootstrap_pvalues()
+        beta_cols : list          — ordered list of beta columns to display (shared axis across models)
         """
-        # ---- pivot ci_df to wide format (rats x features) ----
-        ci_low_pivot  = ci_df.pivot(index='rat_id', columns='feature', values='ci_low')
-        ci_high_pivot = ci_df.pivot(index='rat_id', columns='feature', values='ci_high')
+        # ---- pivot p-values to wide format (rats x features) ----
+        pval_pivot = pval_df.pivot(index='rat_id', columns='feature', values='p_value')
 
         # ---- align beta_df to the shared beta_cols axis ----
         B = beta_df.reindex(columns=beta_cols) if beta_cols else beta_df
@@ -1835,23 +1445,16 @@ class SerialDependenceAnalyzer:
         annot = B.copy().astype(object)
         for rat_id in B.index:
             for col in B.columns:
-                feat     = col.replace("beta_", "")   # "beta_angle" → "angle"
+                feat = col.replace("beta_", "")          # "beta_angle" --> "angle"
                 beta_val = B.loc[rat_id, col]
-
                 if pd.isna(beta_val):
                     annot.loc[rat_id, col] = ""
                     continue
-
                 label = f"{beta_val:.2f}"
-
-                # significant if CI excludes zero
-                if (rat_id in ci_low_pivot.index and feat in ci_low_pivot.columns):
-                    low  = ci_low_pivot.loc[rat_id, feat]
-                    high = ci_high_pivot.loc[rat_id, feat]
-                    if not pd.isna(low) and not pd.isna(high):
-                        if low > 0 or high < 0:
-                            label += "*"
-
+                # check if p-value exists and is significant
+                if rat_id in pval_pivot.index and feat in pval_pivot.columns:
+                    if pval_pivot.loc[rat_id, feat] < 0.05:
+                        label += "*"
                 annot.loc[rat_id, col] = label
 
         # ---- plot ----
@@ -1861,65 +1464,268 @@ class SerialDependenceAnalyzer:
             cmap="coolwarm",
             center=0,
             annot=annot,
-            fmt="",
+            fmt="",                  # fmt must be "" when annot is strings
             linewidths=0.5,
             cbar_kws={"label": "beta"}
         )
-        plt.title(f"{model_label} – betas (* = 95% CI excludes zero)")
+        plt.title(f"{model_label} – betas (* = p < 0.05)")
         plt.ylabel("rat_id")
         plt.xlabel("")
         plt.tight_layout()
         plt.show()
-        
-
-    def plot_forest_ci(self, ci_df, model_label=""):
-        """
-        Forest plot of bootstrap CIs, one subplot per rat.
-
-        Parameters
-        ----------
-        ci_df       : pd.DataFrame — long-format output of bootstrap_ci()
-        model_label : str          — figure title
-        """
-        rats     = sorted(ci_df['rat_id'].unique())
-        features = sorted(ci_df['feature'].unique())
-
-        fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(14, 10))
-        axes = axes.flatten()
-
-        for i, rat in enumerate(rats):
-            ax         = axes[i]
-            ci_df_rat  = ci_df[ci_df['rat_id'] == rat]
-
-            for y_pos, feature in enumerate(features):
-                row_f    = ci_df_rat[ci_df_rat['feature'] == feature]
-
-                if row_f.empty:
-                    continue
-
-                ci_low   = row_f['ci_low'].values[0]
-                ci_high  = row_f['ci_high'].values[0]
-                beta_val = row_f['beta_real'].values[0]
-                color    = 'green' if row_f['significant'].values[0] else 'gray'
-
-                ax.plot([ci_low, ci_high], [y_pos, y_pos], color=color, linewidth=1.5)
-                ax.scatter(beta_val, y_pos, color=color, zorder=3)
-
-            ax.axvline(x=0, color='black', linestyle='--', linewidth=0.8)
-            ax.set_yticks(range(len(features)))
-            ax.set_yticklabels(features, fontsize=8)
-            ax.set_title(f"Rat {rat}", fontsize=9)
-            ax.set_xlabel("beta", fontsize=8)
-
-        # hide unused subplots if rats < 12
-        for j in range(len(rats), len(axes)):
-            axes[j].set_visible(False)
-
-        fig.suptitle(f"{model_label} – bootstrap CIs (green = significant)", fontsize=11)
-        plt.tight_layout()
-        plt.show()
+    
+    
 # ---- START NEW METHOD FOR INDIVIDUAL RAT PLOTTING ----
 
+    import numpy as np
+    from scipy.optimize import minimize
+    from sklearn.preprocessing import StandardScaler
+
+    # -----------------------------
+    # Helper functions (stable)
+    # -----------------------------
+    @staticmethod
+    def _sigmoid(x):
+        x = np.clip(x, -60, 60)
+        return 1.0 / (1.0 + np.exp(-x))
+    @staticmethod
+    def _softplus(x):
+        x = np.clip(x, -60, 60)
+        return np.log1p(np.exp(x))
+
+    def _unpack_params(self, theta, n_beta):
+        """
+        theta = [beta..., u, v]
+        u,v are unconstrained reals; mapped to gamma, lambda in (0,1), gamma+lambda<1.
+        """
+        beta = theta[:n_beta]
+        u, v = theta[n_beta], theta[n_beta + 1]
+
+        a = self._softplus(u)
+        b = self._softplus(v)
+        denom = 1.0 + a + b
+        gamma = a / denom
+        lambd = b / denom
+        return beta, gamma, lambd
+
+    def _neg_logpost(self, theta, X, y, lapse_penalty=200.0):
+        """
+        Toso-style objective:
+        NLL + 200*(gamma^8 + lambda^8)
+        """
+        n_beta = X.shape[1]
+        beta, gamma, lambd = self._unpack_params(theta, n_beta)
+
+        eta = X @ beta
+        p = gamma + (1.0 - gamma - lambd) * self._sigmoid(eta)
+
+        eps = 1e-12
+        p = np.clip(p, eps, 1 - eps) # why should probabilities be clipped? to avoid log(0)
+
+        nll = -np.sum(y * np.log(p) + (1 - y) * np.log(1 - p)) # My loss is a BCE one but here I need to decide if I want to normalize it by number of samples or not
+        pen = lapse_penalty * (gamma**8 + lambd**8)
+        return nll + pen
+    
+    def _neg_loglik(self, theta, X, y):
+
+        """
+        Pure negative log-likelihood (no lapse penalty). for model comparison.
+        """
+        n_beta = X.shape[1]
+        beta, gamma, lambd = self._unpack_params(theta, n_beta)
+
+        eta = X @ beta
+        p = gamma + (1.0 - gamma - lambd) * self._sigmoid(eta)
+
+        eps = 1e-12
+        p = np.clip(p, eps, 1 - eps) # why should probabilities be clipped? to avoid log(0)
+
+        nll = -np.sum(y * np.log(p) + (1 - y) * np.log(1 - p)) # My loss is a BCE one but here I need to decide if I want to normalize it by number of samples or not
+        
+        return nll
+
+    def _fit_lapse_glm(self, X, y, lapse_penalty=200.0, max_iter=4000):
+        """
+        Fit beta + lapse params gamma/lambda with L-BFGS-B.
+        """
+        X = np.asarray(X, float)
+        y = np.asarray(y, int)
+
+        n_beta = X.shape[1]
+        theta0 = np.zeros(n_beta + 2) # why plus 2? because of gamma and lambda
+
+        # initialize lapses small (~1–2% each) and the rest of parameters at 0, why? because of the penalty that will push them towards 0, so we want to start them at a small value to avoid getting stuck at 0
+        theta0[n_beta:] = -4.0
+
+        res = minimize(
+            self._neg_logpost,
+            theta0,
+            args=(X, y, lapse_penalty),
+            method="L-BFGS-B",
+            options={"maxiter": max_iter}
+        )
+
+        # Pure data-fit metrics (no penalty)
+        nll = self._neg_loglik(res.x, X, y)
+        ll = -nll
+        n = len(y)
+
+        beta, gamma, lambd = self._unpack_params(res.x, n_beta)
+        return {"beta": beta, "gamma": gamma, "lambda": lambd, "opt": res, 
+        "nll": nll,
+        "ll": ll,
+        "nll_per_trial": nll / n,
+        "ll_per_trial": ll / n,
+        "n": n}
+
+    # -----------------------------
+    # Main method: one per rat
+    # -----------------------------
+    def _fit_toso_lapse_for_rat_df(
+    self,
+    rat_df,
+    min_trials=200,
+    lapse_penalty=200.0,
+    max_iter=4000,
+    scaler=None,
+    cont_cols=None,
+    choice_cols=None,
+    out_cols=None
+    ):
+        #number of history lags
+        k = int(self.k)
+        # set the current trial features 
+        # and lagged features
+        needed = ["action", "angle"]
+        for lag in range(1, k + 1):
+            needed += [f"angle_n-{lag}", f"action_n-{lag}", f"hitmiss_n-{lag}"]
+
+        existing = [c for c in needed if c in rat_df.columns] # more or less a filter to see if coloumn in needed matches the coloumn in rat_df
+         # drop rows with NaN in any of the needed columns
+        print(f"Before dropping NaNs, {len(rat_df)} trials available for fitting.")
+        rat_df = rat_df.dropna(subset=existing)
+        print(f"After dropping NaNs, {len(rat_df)} trials remain for fitting.")
+
+        if len(rat_df) < min_trials:
+            return None
+
+        y = rat_df["action"].astype(int).to_numpy() 
+
+        if cont_cols is None:
+            cont_cols = ["angle"] + [f"angle_n-{lag}" for lag in range(1, k + 1) if f"angle_n-{lag}" in rat_df.columns]
+
+        if choice_cols is None:
+            choice_cols = [f"action_n-{lag}" for lag in range(1, k + 1) if f"action_n-{lag}" in rat_df.columns]
+
+        if out_cols is None:
+            out_cols = [f"hitmiss_n-{lag}" for lag in range(1, k + 1) if f"hitmiss_n-{lag}" in rat_df.columns]
+
+        all_cols = cont_cols + choice_cols + out_cols
+        X_all = rat_df[all_cols].astype(float).to_numpy()
+
+        if scaler is None:
+            scaler = StandardScaler().fit(X_all)
+
+        X_scaled = scaler.transform(X_all)
+
+        intercept = np.ones((len(rat_df), 1), dtype=float)
+        X = np.hstack([intercept, X_scaled])
+
+        feature_names = ["intercept"] + cont_cols + choice_cols + out_cols
+
+        fit = self._fit_lapse_glm(X, y, lapse_penalty=lapse_penalty, max_iter=max_iter)
+        print(fit["opt"].message)
+
+        return {
+            "beta": fit["beta"],
+            "gamma": fit["gamma"],
+            "lambda": fit["lambda"],
+            "feature_names": feature_names,
+            "n_trials": len(rat_df),
+            "opt_success": bool(fit["opt"].success), # boolean indicating if optimization succeeded
+            "opt_message": str(fit["opt"].message), # message that explains the outcome of the optimization in human-readable form
+            "scaler": scaler,
+            "cont_cols": cont_cols,
+            "choice_cols": choice_cols,
+            "out_cols": out_cols,
+            "nll": fit["nll"],
+            "ll": fit["ll"],
+            "nll_per_trial": fit["nll_per_trial"],
+            "ll_per_trial": fit["ll_per_trial"],
+            "n": fit["n"]
+        }
+    
+    def nested_angle_lags(self, rat_df, K=5, lapse_penalty=200.0, max_iter=4000, scaler=None, min_trials=200):
+    # fixed controls
+        choice_cols = [f"action_n-{lag}" for lag in range(1, K+1) if f"action_n-{lag}" in rat_df.columns]
+        out_cols    = [f"hitmiss_n-{lag}" for lag in range(1, K+1) if f"hitmiss_n-{lag}" in rat_df.columns]
+
+        # -----------------------------
+        # Define MAX continuous cols (L = K) and FIX trial set
+        # -----------------------------
+        cont_cols_max = ["angle"] + [f"angle_n-{lag}" for lag in range(1, K+1) if f"angle_n-{lag}" in rat_df.columns]
+
+        used_cols_max = ["action"] + cont_cols_max + choice_cols + out_cols
+        used_cols_max = [c for c in used_cols_max if c in rat_df.columns]
+        rat_df_fixed = rat_df.dropna(subset=used_cols_max).copy()
+
+        if len(rat_df_fixed) < min_trials:
+            return [{"rat": rat_df["rat"].iloc[0], "L": None, "success": False, "llpt": None, "dllpt": None, "n": len(rat_df_fixed)}]
+
+        # -----------------------------
+        # Fit scaler ONCE (if not provided), on the fixed trial set + max cont cols
+        # -----------------------------
+
+
+        rows = []
+        prev = None
+        rat_id = rat_df["rat"].iloc[0]
+        for L in range(0, K+1):
+            cont_cols = ["angle"] + [f"angle_n-{lag}" for lag in range(1, L+1) if f"angle_n-{lag}" in rat_df.columns]
+
+            res = self._fit_toso_lapse_for_rat_df(
+                rat_df_fixed,
+                min_trials=min_trials,
+                lapse_penalty=lapse_penalty,
+                max_iter=max_iter,
+                scaler=None,
+                cont_cols=cont_cols,
+                choice_cols=choice_cols,
+                out_cols=out_cols
+            )
+            if res is None or not res["opt_success"]:
+                rows.append({"L": L, "success": False, "llpt": None, "dllpt": None, "n": None})
+                continue
+
+            llpt = res["ll_per_trial"]
+            dllpt = None if prev is None else (llpt - prev)
+
+            rows.append({"rat": rat_id, "L": L, "success": True, "llpt": llpt, "dllpt": dllpt, "n": res["n_trials"]})
+            prev = llpt
+
+        return rows
+
+    
+    def analyze_individual_rats_toso_lapse(self, min_trials=200, lapse_penalty=200.0, max_iter=4000):
+        if self.df_processed is None:
+            return {}
+
+        df = self.df_processed
+        rats = sorted(df["rat"].unique())
+        results = {}
+
+        for rat_id in rats:
+            rat_df = df[df["rat"] == rat_id].copy()
+            res = self._fit_toso_lapse_for_rat_df(
+                rat_df,
+                min_trials=min_trials,
+                lapse_penalty=lapse_penalty,
+                max_iter=max_iter,
+            )
+            if res is not None:
+                results[rat_id] = res
+
+        return results # so this returns a dictionary with rat_id as key and the fit results as value, that are also in a dictionary format
 
 # ---- END NEW METHOD FOR INDIVIDUAL RAT PLOTTING ----    
 
