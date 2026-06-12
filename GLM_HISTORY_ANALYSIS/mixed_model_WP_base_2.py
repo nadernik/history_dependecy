@@ -3,6 +3,8 @@
 # - the fitted splines are doing their job? plot and see
 # - Temporal autocorrelation?
 # - how to visualize things
+# - checks on what centering is doing
+# - comparison between spline and linear for angle terms (AIC, likelihood ratio)
 
 
 # ============================================================
