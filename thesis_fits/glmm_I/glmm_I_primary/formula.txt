@@ -1,0 +1,1 @@
+action ~ angle_c * modality + angle_prev_c + reward_prev + success_prev + failure_prev + (1 | rat) + (0 + angle_c | rat) + (0 + angle_prev_c | rat) + (0 + reward_prev | rat) + (0 + success_prev + failure_prev | rat) + (1 | rat:date)

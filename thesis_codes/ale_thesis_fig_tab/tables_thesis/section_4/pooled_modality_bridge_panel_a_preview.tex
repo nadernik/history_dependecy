@@ -1,0 +1,28 @@
+\documentclass[border=8pt]{standalone}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{caption}
+\begin{document}
+\begin{minipage}{720pt}
+\centering
+\captionof{table}{Agreement between pooled and modality-specific GLM history coefficients}
+\vspace{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+Coefficient & \multicolumn{3}{c}{Overall agreement} & \multicolumn{4}{c}{Modalities resolved} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-8}
+ & \shortstack{Pooled\\resolved} & \shortstack{Same sign\\in all 3} & \shortstack{Modality cells\\resolved} & 0 & 1 & 2 & 3 \\
+\midrule
+Previous stimulus & 5/12 & 4/5 & 14/36 & 0 & 1 & 2 & 2 \\
+Reward & 5/12 & 4/5 & 13/36 & 0 & 2 & 2 & 1 \\
+Post-success & 8/12 & 6/8 & 19/36 & 1 & 2 & 2 & 3 \\
+Post-failure & 10/12 & 10/10 & 32/36 & 0 & 0 & 1 & 9 \\
+\midrule
+\textbf{Total} & \textbf{28/48} & \textbf{24/28} & \textbf{78/144} & \textbf{1} & \textbf{5} & \textbf{7} & \textbf{15} \\
+\bottomrule
+\end{tabular}
+\vspace{6pt}
+\par\small\raggedright
+\textit{Note.} Resolution was defined descriptively as an uncorrected 95\% session-bootstrap confidence interval excluding zero. ``Same sign in all 3'' was evaluated only among pooled-resolved effects. Columns 0--3 give the number of pooled-resolved effects separately resolved in zero, one, two, or all three modalities. These summaries do not test whether modalities differ; formal differences require direct modality contrasts.
+\end{minipage}
+\end{document}

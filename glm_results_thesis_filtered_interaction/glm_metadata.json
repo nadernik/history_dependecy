@@ -1,0 +1,1943 @@
+{
+  "config": {
+    "mode": "interaction",
+    "c_values": [
+      "unpenalized",
+      "0.1",
+      "1.0",
+      "10.0"
+    ],
+    "reference_c": "unpenalized",
+    "n_boot": 5000,
+    "ci_level": 95,
+    "random_state": 42,
+    "min_trials": 200,
+    "stimulus_angle_min": 0.0,
+    "stimulus_angle_max": 90.0,
+    "angle_center_deg": 45.0,
+    "timestamp": "2026-09-12T14:10:52.695220",
+    "fitting_seconds": 56894.41866183281
+  },
+  "per_fit": [
+    {
+      "rat_id": 2,
+      "C": "unpenalized",
+      "n_trials_total": 33793,
+      "n_sessions_total": 141,
+      "n_trials_by_mod": {
+        "tactile": 12891,
+        "visual": 10284,
+        "visuotactile": 10618
+      },
+      "n_sessions_by_mod": {
+        "tactile": 128,
+        "visual": 120,
+        "visuotactile": 121
+      },
+      "angle_scale_deg": 26.740626797692777,
+      "aic_approx": 27630.04178907432,
+      "bic_approx": 27781.74595034408,
+      "log_lik": -13797.02089453716,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction",
+        "visual": "interaction+reward",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9088122331364744,
+        "visual": 2.0301857017143536,
+        "visuotactile": 3.342494630405552
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 2,
+      "C": "C=0.1",
+      "n_trials_total": 33793,
+      "n_sessions_total": 141,
+      "n_trials_by_mod": {
+        "tactile": 12891,
+        "visual": 10284,
+        "visuotactile": 10618
+      },
+      "n_sessions_by_mod": {
+        "tactile": 128,
+        "visual": 120,
+        "visuotactile": 121
+      },
+      "angle_scale_deg": 26.740626797692777,
+      "aic_approx": 27633.98598712927,
+      "bic_approx": 27785.69014839903,
+      "log_lik": -13798.992993564634,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction",
+        "visual": "interaction+reward",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9239549927888943,
+        "visual": 2.0164382633297295,
+        "visuotactile": 3.255721752720458
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 2,
+      "C": "C=1.0",
+      "n_trials_total": 33793,
+      "n_sessions_total": 141,
+      "n_trials_by_mod": {
+        "tactile": 12891,
+        "visual": 10284,
+        "visuotactile": 10618
+      },
+      "n_sessions_by_mod": {
+        "tactile": 128,
+        "visual": 120,
+        "visuotactile": 121
+      },
+      "angle_scale_deg": 26.740626797692777,
+      "aic_approx": 27630.08599529427,
+      "bic_approx": 27781.79015656403,
+      "log_lik": -13797.042997647135,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction",
+        "visual": "interaction+reward",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9094714875432113,
+        "visual": 2.02885025159891,
+        "visuotactile": 3.333395653303561
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 2,
+      "C": "C=10.0",
+      "n_trials_total": 33793,
+      "n_sessions_total": 141,
+      "n_trials_by_mod": {
+        "tactile": 12891,
+        "visual": 10284,
+        "visuotactile": 10618
+      },
+      "n_sessions_by_mod": {
+        "tactile": 128,
+        "visual": 120,
+        "visuotactile": 121
+      },
+      "angle_scale_deg": 26.740626797692777,
+      "aic_approx": 27630.042077807237,
+      "bic_approx": 27781.746239076998,
+      "log_lik": -13797.021038903618,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction",
+        "visual": "interaction+reward",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9089295227898135,
+        "visual": 2.0300514728923633,
+        "visuotactile": 3.341577764850094
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 3,
+      "C": "unpenalized",
+      "n_trials_total": 26240,
+      "n_sessions_total": 108,
+      "n_trials_by_mod": {
+        "tactile": 11016,
+        "visual": 7148,
+        "visuotactile": 8076
+      },
+      "n_sessions_by_mod": {
+        "tactile": 94,
+        "visual": 82,
+        "visuotactile": 85
+      },
+      "angle_scale_deg": 26.801970966329183,
+      "aic_approx": 25541.563768164062,
+      "bic_approx": 25688.714492539108,
+      "log_lik": -12752.781884082031,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+reward",
+        "visual": "reward",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.8534183494911977,
+        "visual": 1.4277467518052256,
+        "visuotactile": 1.6794387812212288
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 3,
+      "C": "C=0.1",
+      "n_trials_total": 26240,
+      "n_sessions_total": 108,
+      "n_trials_by_mod": {
+        "tactile": 11016,
+        "visual": 7148,
+        "visuotactile": 8076
+      },
+      "n_sessions_by_mod": {
+        "tactile": 94,
+        "visual": 82,
+        "visuotactile": 85
+      },
+      "angle_scale_deg": 26.801970966329183,
+      "aic_approx": 25542.08821871445,
+      "bic_approx": 25689.238943089495,
+      "log_lik": -12753.044109357224,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+reward",
+        "visual": "reward",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.8636388770960808,
+        "visual": 1.4214415846470074,
+        "visuotactile": 1.6727182697244936
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 3,
+      "C": "C=1.0",
+      "n_trials_total": 26240,
+      "n_sessions_total": 108,
+      "n_trials_by_mod": {
+        "tactile": 11016,
+        "visual": 7148,
+        "visuotactile": 8076
+      },
+      "n_sessions_by_mod": {
+        "tactile": 94,
+        "visual": 82,
+        "visuotactile": 85
+      },
+      "angle_scale_deg": 26.801970966329183,
+      "aic_approx": 25541.56938728302,
+      "bic_approx": 25688.720111658065,
+      "log_lik": -12752.78469364151,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+reward",
+        "visual": "reward",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.8544219160166583,
+        "visual": 1.427262353250605,
+        "visuotactile": 1.6787266467560995
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 3,
+      "C": "C=10.0",
+      "n_trials_total": 26240,
+      "n_sessions_total": 108,
+      "n_trials_by_mod": {
+        "tactile": 11016,
+        "visual": 7148,
+        "visuotactile": 8076
+      },
+      "n_sessions_by_mod": {
+        "tactile": 94,
+        "visual": 82,
+        "visuotactile": 85
+      },
+      "angle_scale_deg": 26.801970966329183,
+      "aic_approx": 25541.563825605193,
+      "bic_approx": 25688.71454998024,
+      "log_lik": -12752.781912802597,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+reward",
+        "visual": "reward",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.8535187665634242,
+        "visual": 1.4275070730319783,
+        "visuotactile": 1.6793674451916418
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 4,
+      "C": "unpenalized",
+      "n_trials_total": 50462,
+      "n_sessions_total": 233,
+      "n_trials_by_mod": {
+        "tactile": 18790,
+        "visual": 15709,
+        "visuotactile": 15963
+      },
+      "n_sessions_by_mod": {
+        "tactile": 221,
+        "visual": 209,
+        "visuotactile": 209
+      },
+      "angle_scale_deg": 27.41822485473557,
+      "aic_approx": 45996.31778009303,
+      "bic_approx": 46155.23934551478,
+      "log_lik": -22980.158890046514,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 1.5196646770555744,
+        "visual": 0.7674002961100514,
+        "visuotactile": 2.7448958118854034
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 4,
+      "C": "C=0.1",
+      "n_trials_total": 50462,
+      "n_sessions_total": 233,
+      "n_trials_by_mod": {
+        "tactile": 18790,
+        "visual": 15709,
+        "visuotactile": 15963
+      },
+      "n_sessions_by_mod": {
+        "tactile": 221,
+        "visual": 209,
+        "visuotactile": 209
+      },
+      "angle_scale_deg": 27.41822485473557,
+      "aic_approx": 45997.161729795014,
+      "bic_approx": 46156.08329521677,
+      "log_lik": -22980.580864897507,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 1.5148409776677436,
+        "visual": 0.7707537948782048,
+        "visuotactile": 2.725607610693209
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 4,
+      "C": "C=1.0",
+      "n_trials_total": 50462,
+      "n_sessions_total": 233,
+      "n_trials_by_mod": {
+        "tactile": 18790,
+        "visual": 15709,
+        "visuotactile": 15963
+      },
+      "n_sessions_by_mod": {
+        "tactile": 221,
+        "visual": 209,
+        "visuotactile": 209
+      },
+      "angle_scale_deg": 27.41822485473557,
+      "aic_approx": 45996.488169525386,
+      "bic_approx": 46155.40973494714,
+      "log_lik": -22980.244084762693,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 1.5192393008873792,
+        "visual": 0.7677541368893068,
+        "visuotactile": 2.742929220934263
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 4,
+      "C": "C=10.0",
+      "n_trials_total": 50462,
+      "n_sessions_total": 233,
+      "n_trials_by_mod": {
+        "tactile": 18790,
+        "visual": 15709,
+        "visuotactile": 15963
+      },
+      "n_sessions_by_mod": {
+        "tactile": 221,
+        "visual": 209,
+        "visuotactile": 209
+      },
+      "angle_scale_deg": 27.41822485473557,
+      "aic_approx": 45996.31674966107,
+      "bic_approx": 46155.238315082825,
+      "log_lik": -22980.158374830535,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 1.5196220908139355,
+        "visual": 0.7674354679340978,
+        "visuotactile": 2.7446988381519297
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 5,
+      "C": "unpenalized",
+      "n_trials_total": 41834,
+      "n_sessions_total": 171,
+      "n_trials_by_mod": {
+        "tactile": 16784,
+        "visual": 12180,
+        "visuotactile": 12870
+      },
+      "n_sessions_by_mod": {
+        "tactile": 157,
+        "visual": 145,
+        "visuotactile": 146
+      },
+      "angle_scale_deg": 27.44170439436156,
+      "aic_approx": 39353.63871896822,
+      "bic_approx": 39509.18508329847,
+      "log_lik": -19658.81935948411,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice",
+        "visual": "choice",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6475003864254281,
+        "visual": 1.7349662014204115,
+        "visuotactile": 2.4550039893915114
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 5,
+      "C": "C=0.1",
+      "n_trials_total": 41834,
+      "n_sessions_total": 171,
+      "n_trials_by_mod": {
+        "tactile": 16784,
+        "visual": 12180,
+        "visuotactile": 12870
+      },
+      "n_sessions_by_mod": {
+        "tactile": 157,
+        "visual": 145,
+        "visuotactile": 146
+      },
+      "angle_scale_deg": 27.44170439436156,
+      "aic_approx": 39354.92893930925,
+      "bic_approx": 39510.4753036395,
+      "log_lik": -19659.464469654624,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice",
+        "visual": "choice",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.657758614056373,
+        "visual": 1.7248720252620977,
+        "visuotactile": 2.4271605979234763
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 5,
+      "C": "C=1.0",
+      "n_trials_total": 41834,
+      "n_sessions_total": 171,
+      "n_trials_by_mod": {
+        "tactile": 16784,
+        "visual": 12180,
+        "visuotactile": 12870
+      },
+      "n_sessions_by_mod": {
+        "tactile": 157,
+        "visual": 145,
+        "visuotactile": 146
+      },
+      "angle_scale_deg": 27.44170439436156,
+      "aic_approx": 39353.65379422443,
+      "bic_approx": 39509.20015855468,
+      "log_lik": -19658.826897112216,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice",
+        "visual": "choice",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6486885576273984,
+        "visual": 1.734117820518216,
+        "visuotactile": 2.4547718863313936
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 5,
+      "C": "C=10.0",
+      "n_trials_total": 41834,
+      "n_sessions_total": 171,
+      "n_trials_by_mod": {
+        "tactile": 16784,
+        "visual": 12180,
+        "visuotactile": 12870
+      },
+      "n_sessions_by_mod": {
+        "tactile": 157,
+        "visual": 145,
+        "visuotactile": 146
+      },
+      "angle_scale_deg": 27.44170439436156,
+      "aic_approx": 39353.638998355986,
+      "bic_approx": 39509.185362686236,
+      "log_lik": -19658.819499177993,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice",
+        "visual": "choice",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6476127352626944,
+        "visual": 1.73488129483178,
+        "visuotactile": 2.454755522880336
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 6,
+      "C": "unpenalized",
+      "n_trials_total": 74070,
+      "n_sessions_total": 278,
+      "n_trials_by_mod": {
+        "tactile": 25302,
+        "visual": 24270,
+        "visuotactile": 24498
+      },
+      "n_sessions_by_mod": {
+        "tactile": 265,
+        "visual": 262,
+        "visuotactile": 264
+      },
+      "angle_scale_deg": 27.76814478609806,
+      "aic_approx": 59365.02956537911,
+      "bic_approx": 59530.85935105725,
+      "log_lik": -29664.514782689555,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction+reward",
+        "visuotactile": "interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9113306812857316,
+        "visual": 2.008718227054058,
+        "visuotactile": 3.3036325840984118
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 6,
+      "C": "C=0.1",
+      "n_trials_total": 74070,
+      "n_sessions_total": 278,
+      "n_trials_by_mod": {
+        "tactile": 25302,
+        "visual": 24270,
+        "visuotactile": 24498
+      },
+      "n_sessions_by_mod": {
+        "tactile": 265,
+        "visual": 262,
+        "visuotactile": 264
+      },
+      "angle_scale_deg": 27.76814478609806,
+      "aic_approx": 59366.85661573572,
+      "bic_approx": 59532.686401413855,
+      "log_lik": -29665.42830786786,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction+reward",
+        "visuotactile": "interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9173544690988235,
+        "visual": 2.0029877585947666,
+        "visuotactile": 3.265920831666979
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 6,
+      "C": "C=1.0",
+      "n_trials_total": 74070,
+      "n_sessions_total": 278,
+      "n_trials_by_mod": {
+        "tactile": 25302,
+        "visual": 24270,
+        "visuotactile": 24498
+      },
+      "n_sessions_by_mod": {
+        "tactile": 265,
+        "visual": 262,
+        "visuotactile": 264
+      },
+      "angle_scale_deg": 27.76814478609806,
+      "aic_approx": 59365.336425411544,
+      "bic_approx": 59531.16621108968,
+      "log_lik": -29664.668212705772,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction+reward",
+        "visuotactile": "interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9119407424789705,
+        "visual": 2.008185493145927,
+        "visuotactile": 3.2997220200866044
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 6,
+      "C": "C=10.0",
+      "n_trials_total": 74070,
+      "n_sessions_total": 278,
+      "n_trials_by_mod": {
+        "tactile": 25302,
+        "visual": 24270,
+        "visuotactile": 24498
+      },
+      "n_sessions_by_mod": {
+        "tactile": 265,
+        "visual": 262,
+        "visuotactile": 264
+      },
+      "angle_scale_deg": 27.76814478609806,
+      "aic_approx": 59365.02693267812,
+      "bic_approx": 59530.856718356255,
+      "log_lik": -29664.51346633906,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction+reward",
+        "visuotactile": "interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9113917708462553,
+        "visual": 2.0086651920874163,
+        "visuotactile": 3.3032399923578097
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 7,
+      "C": "unpenalized",
+      "n_trials_total": 49988,
+      "n_sessions_total": 185,
+      "n_trials_by_mod": {
+        "tactile": 17755,
+        "visual": 15898,
+        "visuotactile": 16335
+      },
+      "n_sessions_by_mod": {
+        "tactile": 173,
+        "visual": 171,
+        "visuotactile": 172
+      },
+      "angle_scale_deg": 28.172031533741844,
+      "aic_approx": 42904.73041950837,
+      "bic_approx": 43063.482108109274,
+      "log_lik": -21434.365209754185,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.3712337866201109,
+        "visual": 2.4555585209784065,
+        "visuotactile": 3.087596438179954
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 7,
+      "C": "C=0.1",
+      "n_trials_total": 49988,
+      "n_sessions_total": 185,
+      "n_trials_by_mod": {
+        "tactile": 17755,
+        "visual": 15898,
+        "visuotactile": 16335
+      },
+      "n_sessions_by_mod": {
+        "tactile": 173,
+        "visual": 171,
+        "visuotactile": 172
+      },
+      "angle_scale_deg": 28.172031533741844,
+      "aic_approx": 42908.48599853061,
+      "bic_approx": 43067.237687131514,
+      "log_lik": -21436.242999265305,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.3861429822235285,
+        "visual": 2.4206837504045584,
+        "visuotactile": 3.037684071266
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 7,
+      "C": "C=1.0",
+      "n_trials_total": 49988,
+      "n_sessions_total": 185,
+      "n_trials_by_mod": {
+        "tactile": 17755,
+        "visual": 15898,
+        "visuotactile": 16335
+      },
+      "n_sessions_by_mod": {
+        "tactile": 173,
+        "visual": 171,
+        "visuotactile": 172
+      },
+      "angle_scale_deg": 28.172031533741844,
+      "aic_approx": 42904.75240681498,
+      "bic_approx": 43063.50409541588,
+      "log_lik": -21434.37620340749,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.37276818678016677,
+        "visual": 2.4525830499029375,
+        "visuotactile": 3.0825002558529917
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 7,
+      "C": "C=10.0",
+      "n_trials_total": 49988,
+      "n_sessions_total": 185,
+      "n_trials_by_mod": {
+        "tactile": 17755,
+        "visual": 15898,
+        "visuotactile": 16335
+      },
+      "n_sessions_by_mod": {
+        "tactile": 173,
+        "visual": 171,
+        "visuotactile": 172
+      },
+      "angle_scale_deg": 28.172031533741844,
+      "aic_approx": 42904.72864727689,
+      "bic_approx": 43063.48033587779,
+      "log_lik": -21434.364323638445,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.37138758862885957,
+        "visual": 2.4552597624336387,
+        "visuotactile": 3.0870623415038914
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 9,
+      "C": "unpenalized",
+      "n_trials_total": 58302,
+      "n_sessions_total": 255,
+      "n_trials_by_mod": {
+        "tactile": 20134,
+        "visual": 17710,
+        "visuotactile": 20458
+      },
+      "n_sessions_by_mod": {
+        "tactile": 244,
+        "visual": 240,
+        "visuotactile": 249
+      },
+      "angle_scale_deg": 29.65095573357839,
+      "aic_approx": 57706.03169504783,
+      "bic_approx": 57867.55274523504,
+      "log_lik": -28835.015847523915,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.699321650549551,
+        "visual": 1.0534101608913413,
+        "visuotactile": 2.292965607780326
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 9,
+      "C": "C=0.1",
+      "n_trials_total": 58302,
+      "n_sessions_total": 255,
+      "n_trials_by_mod": {
+        "tactile": 20134,
+        "visual": 17710,
+        "visuotactile": 20458
+      },
+      "n_sessions_by_mod": {
+        "tactile": 244,
+        "visual": 240,
+        "visuotactile": 249
+      },
+      "angle_scale_deg": 29.65095573357839,
+      "aic_approx": 57706.61225599064,
+      "bic_approx": 57868.13330617786,
+      "log_lik": -28835.30612799532,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.7045757688898161,
+        "visual": 1.0506328868181656,
+        "visuotactile": 2.277425892753352
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 9,
+      "C": "C=1.0",
+      "n_trials_total": 58302,
+      "n_sessions_total": 255,
+      "n_trials_by_mod": {
+        "tactile": 20134,
+        "visual": 17710,
+        "visuotactile": 20458
+      },
+      "n_sessions_by_mod": {
+        "tactile": 244,
+        "visual": 240,
+        "visuotactile": 249
+      },
+      "angle_scale_deg": 29.65095573357839,
+      "aic_approx": 57706.05409975919,
+      "bic_approx": 57867.5751499464,
+      "log_lik": -28835.027049879594,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6997255839113949,
+        "visual": 1.0533134069175882,
+        "visuotactile": 2.291564497960703
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 9,
+      "C": "C=10.0",
+      "n_trials_total": 58302,
+      "n_sessions_total": 255,
+      "n_trials_by_mod": {
+        "tactile": 20134,
+        "visual": 17710,
+        "visuotactile": 20458
+      },
+      "n_sessions_by_mod": {
+        "tactile": 244,
+        "visual": 240,
+        "visuotactile": 249
+      },
+      "angle_scale_deg": 29.65095573357839,
+      "aic_approx": 57706.033522482336,
+      "bic_approx": 57867.55457266955,
+      "log_lik": -28835.016761241168,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6993621329317498,
+        "visual": 1.053400111161535,
+        "visuotactile": 2.2928253613490277
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 10,
+      "C": "unpenalized",
+      "n_trials_total": 61860,
+      "n_sessions_total": 237,
+      "n_trials_by_mod": {
+        "tactile": 21977,
+        "visual": 19617,
+        "visuotactile": 20266
+      },
+      "n_sessions_by_mod": {
+        "tactile": 231,
+        "visual": 226,
+        "visuotactile": 232
+      },
+      "angle_scale_deg": 28.809385261197146,
+      "aic_approx": 60053.03769457291,
+      "bic_approx": 60215.62501740521,
+      "log_lik": -30008.518847286454,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6404849419536823,
+        "visual": 1.3466038675311158,
+        "visuotactile": 2.390282532824709
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 10,
+      "C": "C=0.1",
+      "n_trials_total": 61860,
+      "n_sessions_total": 237,
+      "n_trials_by_mod": {
+        "tactile": 21977,
+        "visual": 19617,
+        "visuotactile": 20266
+      },
+      "n_sessions_by_mod": {
+        "tactile": 231,
+        "visual": 226,
+        "visuotactile": 232
+      },
+      "angle_scale_deg": 28.809385261197146,
+      "aic_approx": 60053.978306454075,
+      "bic_approx": 60216.56562928638,
+      "log_lik": -30008.989153227038,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6447749015927606,
+        "visual": 1.3439760630259687,
+        "visuotactile": 2.375879043545128
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 10,
+      "C": "C=1.0",
+      "n_trials_total": 61860,
+      "n_sessions_total": 237,
+      "n_trials_by_mod": {
+        "tactile": 21977,
+        "visual": 19617,
+        "visuotactile": 20266
+      },
+      "n_sessions_by_mod": {
+        "tactile": 231,
+        "visual": 226,
+        "visuotactile": 232
+      },
+      "angle_scale_deg": 28.809385261197146,
+      "aic_approx": 60053.04404172411,
+      "bic_approx": 60215.631364556415,
+      "log_lik": -30008.522020862056,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6409202289051027,
+        "visual": 1.3463944759601982,
+        "visuotactile": 2.3888197286170225
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 10,
+      "C": "C=10.0",
+      "n_trials_total": 61860,
+      "n_sessions_total": 237,
+      "n_trials_by_mod": {
+        "tactile": 21977,
+        "visual": 19617,
+        "visuotactile": 20266
+      },
+      "n_sessions_by_mod": {
+        "tactile": 231,
+        "visual": 226,
+        "visuotactile": 232
+      },
+      "angle_scale_deg": 28.809385261197146,
+      "aic_approx": 60053.037884165344,
+      "bic_approx": 60215.62520699765,
+      "log_lik": -30008.518942082672,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction+reward"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.6405285345954681,
+        "visual": 1.3465829879821665,
+        "visuotactile": 2.3901360232689774
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 11,
+      "C": "unpenalized",
+      "n_trials_total": 75908,
+      "n_sessions_total": 273,
+      "n_trials_by_mod": {
+        "tactile": 33754,
+        "visual": 19063,
+        "visuotactile": 23091
+      },
+      "n_sessions_by_mod": {
+        "tactile": 257,
+        "visual": 249,
+        "visuotactile": 265
+      },
+      "angle_scale_deg": 31.375554064127606,
+      "aic_approx": 68227.53018740393,
+      "bic_approx": 68393.80117987806,
+      "log_lik": -34095.765093701964,
+      "pse_on_scale_by_mod": {
+        "tactile": false,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.48527545795719357,
+        "visual": 2.1649550009210343,
+        "visuotactile": 2.771914806482365
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 11,
+      "C": "C=0.1",
+      "n_trials_total": 75908,
+      "n_sessions_total": 273,
+      "n_trials_by_mod": {
+        "tactile": 33754,
+        "visual": 19063,
+        "visuotactile": 23091
+      },
+      "n_sessions_by_mod": {
+        "tactile": 257,
+        "visual": 249,
+        "visuotactile": 265
+      },
+      "angle_scale_deg": 31.375554064127606,
+      "aic_approx": 68228.83826535633,
+      "bic_approx": 68395.10925783047,
+      "log_lik": -34096.419132678166,
+      "pse_on_scale_by_mod": {
+        "tactile": false,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.4895928402959716,
+        "visual": 2.1513938794486798,
+        "visuotactile": 2.7479216794425585
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 11,
+      "C": "C=1.0",
+      "n_trials_total": 75908,
+      "n_sessions_total": 273,
+      "n_trials_by_mod": {
+        "tactile": 33754,
+        "visual": 19063,
+        "visuotactile": 23091
+      },
+      "n_sessions_by_mod": {
+        "tactile": 257,
+        "visual": 249,
+        "visuotactile": 265
+      },
+      "angle_scale_deg": 31.375554064127606,
+      "aic_approx": 68227.5383674608,
+      "bic_approx": 68393.80935993494,
+      "log_lik": -34095.7691837304,
+      "pse_on_scale_by_mod": {
+        "tactile": false,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.4857245592888882,
+        "visual": 2.1635656885270986,
+        "visuotactile": 2.7694655640107237
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 11,
+      "C": "C=10.0",
+      "n_trials_total": 75908,
+      "n_sessions_total": 273,
+      "n_trials_by_mod": {
+        "tactile": 33754,
+        "visual": 19063,
+        "visuotactile": 23091
+      },
+      "n_sessions_by_mod": {
+        "tactile": 257,
+        "visual": 249,
+        "visuotactile": 265
+      },
+      "angle_scale_deg": 31.375554064127606,
+      "aic_approx": 68227.52971313386,
+      "bic_approx": 68393.800705608,
+      "log_lik": -34095.76485656693,
+      "pse_on_scale_by_mod": {
+        "tactile": false,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+interaction",
+        "visuotactile": "choice+interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.4853205566990935,
+        "visual": 2.16481568550393,
+        "visuotactile": 2.771669365301109
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 12,
+      "C": "unpenalized",
+      "n_trials_total": 59534,
+      "n_sessions_total": 205,
+      "n_trials_by_mod": {
+        "tactile": 23512,
+        "visual": 15457,
+        "visuotactile": 20565
+      },
+      "n_sessions_by_mod": {
+        "tactile": 197,
+        "visual": 180,
+        "visuotactile": 188
+      },
+      "angle_scale_deg": 31.089131844961706,
+      "aic_approx": 66522.25821645331,
+      "bic_approx": 66684.15566787754,
+      "log_lik": -33243.129108226654,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction+reward",
+        "visual": "interaction",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.405041672777032,
+        "visual": 1.3040329417484466,
+        "visuotactile": 1.2475549357835227
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 12,
+      "C": "C=0.1",
+      "n_trials_total": 59534,
+      "n_sessions_total": 205,
+      "n_trials_by_mod": {
+        "tactile": 23512,
+        "visual": 15457,
+        "visuotactile": 20565
+      },
+      "n_sessions_by_mod": {
+        "tactile": 197,
+        "visual": 180,
+        "visuotactile": 188
+      },
+      "angle_scale_deg": 31.089131844961706,
+      "aic_approx": 66522.46003157258,
+      "bic_approx": 66684.35748299681,
+      "log_lik": -33243.23001578629,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction+reward",
+        "visual": "interaction",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.4084284151625441,
+        "visual": 1.3002368291101494,
+        "visuotactile": 1.2454316028042773
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 12,
+      "C": "C=1.0",
+      "n_trials_total": 59534,
+      "n_sessions_total": 205,
+      "n_trials_by_mod": {
+        "tactile": 23512,
+        "visual": 15457,
+        "visuotactile": 20565
+      },
+      "n_sessions_by_mod": {
+        "tactile": 197,
+        "visual": 180,
+        "visuotactile": 188
+      },
+      "angle_scale_deg": 31.089131844961706,
+      "aic_approx": 66522.26205327161,
+      "bic_approx": 66684.15950469584,
+      "log_lik": -33243.131026635805,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction+reward",
+        "visual": "interaction",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.40538399910751755,
+        "visual": 1.3036507153618522,
+        "visuotactile": 1.2473414972543766
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 12,
+      "C": "C=10.0",
+      "n_trials_total": 59534,
+      "n_sessions_total": 205,
+      "n_trials_by_mod": {
+        "tactile": 23512,
+        "visual": 15457,
+        "visuotactile": 20565
+      },
+      "n_sessions_by_mod": {
+        "tactile": 197,
+        "visual": 180,
+        "visuotactile": 188
+      },
+      "angle_scale_deg": 31.089131844961706,
+      "aic_approx": 66522.25843126304,
+      "bic_approx": 66684.15588268726,
+      "log_lik": -33243.12921563152,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "interaction+reward",
+        "visual": "interaction",
+        "visuotactile": "interaction"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.40507594289091003,
+        "visual": 1.3039946940676996,
+        "visuotactile": 1.2475335567663972
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 13,
+      "C": "unpenalized",
+      "n_trials_total": 90470,
+      "n_sessions_total": 368,
+      "n_trials_by_mod": {
+        "tactile": 35689,
+        "visual": 25751,
+        "visuotactile": 29030
+      },
+      "n_sessions_by_mod": {
+        "tactile": 363,
+        "visual": 354,
+        "visuotactile": 360
+      },
+      "angle_scale_deg": 32.36145702808976,
+      "aic_approx": 99551.51548197019,
+      "bic_approx": 99720.94540646454,
+      "log_lik": -49757.75774098509,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.5199661052591535,
+        "visual": 1.0918079951396082,
+        "visuotactile": 1.676415979391475
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 13,
+      "C": "C=0.1",
+      "n_trials_total": 90470,
+      "n_sessions_total": 368,
+      "n_trials_by_mod": {
+        "tactile": 35689,
+        "visual": 25751,
+        "visuotactile": 29030
+      },
+      "n_sessions_by_mod": {
+        "tactile": 363,
+        "visual": 354,
+        "visuotactile": 360
+      },
+      "angle_scale_deg": 32.36145702808976,
+      "aic_approx": 99551.715298601,
+      "bic_approx": 99721.14522309536,
+      "log_lik": -49757.8576493005,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.5206357585519052,
+        "visual": 1.0891429752842905,
+        "visuotactile": 1.6740159497135605
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 13,
+      "C": "C=1.0",
+      "n_trials_total": 90470,
+      "n_sessions_total": 368,
+      "n_trials_by_mod": {
+        "tactile": 35689,
+        "visual": 25751,
+        "visuotactile": 29030
+      },
+      "n_sessions_by_mod": {
+        "tactile": 363,
+        "visual": 354,
+        "visuotactile": 360
+      },
+      "angle_scale_deg": 32.36145702808976,
+      "aic_approx": 99551.51705738326,
+      "bic_approx": 99720.94698187761,
+      "log_lik": -49757.75852869163,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.5201253386100104,
+        "visual": 1.0916729488643102,
+        "visuotactile": 1.6762149301023639
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 13,
+      "C": "C=10.0",
+      "n_trials_total": 90470,
+      "n_sessions_total": 368,
+      "n_trials_by_mod": {
+        "tactile": 35689,
+        "visual": 25751,
+        "visuotactile": 29030
+      },
+      "n_sessions_by_mod": {
+        "tactile": 363,
+        "visual": 354,
+        "visuotactile": 360
+      },
+      "angle_scale_deg": 32.36145702808976,
+      "aic_approx": 99551.51543958226,
+      "bic_approx": 99720.94536407662,
+      "log_lik": -49757.75771979113,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction",
+        "visual": "choice+interaction",
+        "visuotactile": "null"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.519982132321072,
+        "visual": 1.0917945360107335,
+        "visuotactile": 1.6763941153816944
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 16,
+      "C": "unpenalized",
+      "n_trials_total": 81818,
+      "n_sessions_total": 247,
+      "n_trials_by_mod": {
+        "tactile": 27804,
+        "visual": 26284,
+        "visuotactile": 27730
+      },
+      "n_sessions_by_mod": {
+        "tactile": 245,
+        "visual": 245,
+        "visuotactile": 247
+      },
+      "angle_scale_deg": 31.557176758768616,
+      "aic_approx": 74375.49795062064,
+      "bic_approx": 74543.11849647174,
+      "log_lik": -37169.74897531032,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.986104755223022,
+        "visual": 1.0956219701579937,
+        "visuotactile": 2.524749624841993
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 16,
+      "C": "C=0.1",
+      "n_trials_total": 81818,
+      "n_sessions_total": 247,
+      "n_trials_by_mod": {
+        "tactile": 27804,
+        "visual": 26284,
+        "visuotactile": 27730
+      },
+      "n_sessions_by_mod": {
+        "tactile": 245,
+        "visual": 245,
+        "visuotactile": 247
+      },
+      "angle_scale_deg": 31.557176758768616,
+      "aic_approx": 74375.9734076855,
+      "bic_approx": 74543.59395353659,
+      "log_lik": -37169.98670384275,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice+reward",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9895874556432782,
+        "visual": 1.0964384595275922,
+        "visuotactile": 2.511433120658117
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 16,
+      "C": "C=1.0",
+      "n_trials_total": 81818,
+      "n_sessions_total": 247,
+      "n_trials_by_mod": {
+        "tactile": 27804,
+        "visual": 26284,
+        "visuotactile": 27730
+      },
+      "n_sessions_by_mod": {
+        "tactile": 245,
+        "visual": 245,
+        "visuotactile": 247
+      },
+      "angle_scale_deg": 31.557176758768616,
+      "aic_approx": 74375.50834206553,
+      "bic_approx": 74543.12888791662,
+      "log_lik": -37169.754171032764,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.986342388768944,
+        "visual": 1.095620888314498,
+        "visuotactile": 2.5234380018427336
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    },
+    {
+      "rat_id": 16,
+      "C": "C=10.0",
+      "n_trials_total": 81818,
+      "n_sessions_total": 247,
+      "n_trials_by_mod": {
+        "tactile": 27804,
+        "visual": 26284,
+        "visuotactile": 27730
+      },
+      "n_sessions_by_mod": {
+        "tactile": 245,
+        "visual": 245,
+        "visuotactile": 247
+      },
+      "angle_scale_deg": 31.557176758768616,
+      "aic_approx": 74375.49859982403,
+      "bic_approx": 74543.11914567513,
+      "log_lik": -37169.749299912015,
+      "pse_on_scale_by_mod": {
+        "tactile": true,
+        "visual": true,
+        "visuotactile": true
+      },
+      "profile_by_mod": {
+        "tactile": "choice+interaction+reward",
+        "visual": "choice",
+        "visuotactile": "choice"
+      },
+      "beta_angle_boot_min_by_mod": {
+        "tactile": 0.9861284038742513,
+        "visual": 1.0956218918729177,
+        "visuotactile": 2.52461852307788
+      },
+      "beta_angle_boot_frac_positive_by_mod": {
+        "tactile": 1.0,
+        "visual": 1.0,
+        "visuotactile": 1.0
+      }
+    }
+  ]
+}

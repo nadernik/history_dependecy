@@ -9,11 +9,11 @@
 # =============================
 # CONFIG
 # =============================
-RAT_ID        = 9
+RAT_ID        = 11
 MIN_TRIALS    = 200
 SMOOTH_WINDOW = 10
 HISTORY_DEPTH = 1
-FEATURES      = ['angle', 'action_n-1', 'angle_n-1', 'failure_n-1']  # features_17
+FEATURES      = ['angle', 'action_n-1', 'angle_n-1', 'success_n-1']  # features_17
 MODALITIES    = {1: 'tactile', 2: 'visual', 3: 'visuotactile'}
 MOD_COLORS    = {
     'tactile':      '#e07b7b',
@@ -27,6 +27,8 @@ MOD_COLORS    = {
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 from functions_Ale import filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 

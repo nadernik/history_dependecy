@@ -1,0 +1,21 @@
+\begin{table}[htbp]
+\centering
+\caption{Ridge-penalization sensitivity: per-coefficient shift from the unpenalized fit.}
+\label{tab:glm-coef-shift-summary}
+\begin{tabular}{lcccccc}
+\toprule
+Coefficient & \multicolumn{2}{c}{C=0.1} & \multicolumn{2}{c}{C=1.0} & \multicolumn{2}{c}{C=10.0} \\
+ & Median $|\Delta|$ & Max $|\Delta|$ & Median $|\Delta|$ & Max $|\Delta|$ & Median $|\Delta|$ & Max $|\Delta|$ \\
+\midrule
+Intercept & $0.0002$ & $0.0011$ & $0.0000$ & $0.0001$ & $0.0000$ & $0.0000$ \\
+$\beta_{\mathrm{angle}}$ & $0.0023$ & $0.0069$ & $0.0002$ & $0.0007$ & $0.0000$ & $0.0001$ \\
+$\beta_{\mathrm{angle},\,n-1}$ & $0.0010$ & $0.0028$ & $0.0001$ & $0.0003$ & $0.0000$ & $0.0000$ \\
+$\beta_{\mathrm{reward},\,n-1}$ & $0.0006$ & $0.0033$ & $0.0001$ & $0.0003$ & $0.0000$ & $0.0000$ \\
+$\beta_{\mathrm{success},\,n-1}$ & $0.0007$ & $0.0026$ & $0.0001$ & $0.0003$ & $0.0000$ & $0.0000$ \\
+$\beta_{\mathrm{failure},\,n-1}$ & $0.0019$ & $0.0038$ & $0.0002$ & $0.0004$ & $0.0000$ & $0.0000$ \\
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+\par\noindent
+\begin{minipage}{\linewidth}\small Shift is the absolute difference between the coefficient at each penalization level and its unpenalized value, summarized across rats.\end{minipage}
+\end{table}

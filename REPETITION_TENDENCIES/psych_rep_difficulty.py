@@ -11,6 +11,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.stats import norm
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 from functions_Ale import filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 
@@ -30,10 +32,10 @@ RESP_COL           = 'action'
 # -----------------------------
 # TUNABLE PARAMETERS
 # -----------------------------
-TARGET_RAT     = 12      # <-- change to run on a different rat
+TARGET_RAT     = 9      # <-- change to run on a different rat
 MIN_TRIALS     = 20     # minimum trials per difficulty level
 MIN_SESSIONS   = 3      # minimum sessions for reliable session-bootstrap CIs
-N_BOOT         = 500    # number of bootstrap resamples
+N_BOOT         = 50    # number of bootstrap resamples
 X_GRID         = np.linspace(-45, 45, 200)   # smooth x-axis for plotting fitted curves
 
 # Empirical dot scaling: marker area = BUBBLE_SCALE * n_trials_at_level

@@ -1,0 +1,25 @@
+% Requires \usepackage{booktabs} (and textcomp for \textdegree).
+\begin{table}[tbp]
+  \centering
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{llllrrrr}
+    \toprule
+    & Rat & Cond. & Tier transition & $\Delta n$ (\%) & Acc.\ $u \rightarrow f$ (\%) & $\sigma_{97.5}\ u \rightarrow f$ (\textdegree) & $\gamma+\lambda\ u \rightarrow f$ \\
+    \midrule
+    \multicolumn{8}{l}{\emph{Upgrades (4)}} \\
+    $\uparrow$ & 3 & Mod 1 & poor → usable & -17 & 75.4 $\rightarrow$ 75.2 & 37.6 $\rightarrow$ 33.6 & 0.406 $\rightarrow$ 0.348 \\
+    $\uparrow$ & 9 & Pooled & usable → clean & -37 & 79.1 $\rightarrow$ 80.2 & 14.4 $\rightarrow$ 17.1 & 0.393 $\rightarrow$ 0.324 \\
+    $\uparrow$ & 12 & Mod 3 & usable → clean & -64 & 73.7 $\rightarrow$ 84.6 & 24.7 $\rightarrow$ 13.8 & 0.523 $\rightarrow$ 0.271 \\
+    $\uparrow$ & 12 & Pooled & poor → usable & -48 & 71.9 $\rightarrow$ 75.4 & 40.2 $\rightarrow$ 30.6 & 0.544 $\rightarrow$ 0.445 \\
+    \midrule
+    \multicolumn{8}{l}{\emph{Downgrades (4)}} \\
+    $\downarrow$ & 4 & Mod 2 & usable → poor & -8 & 74.1 $\rightarrow$ 74.4 & 33.5 $\rightarrow$ 36.8 & 0.462 $\rightarrow$ 0.432 \\
+    $\downarrow$ & 9 & Mod 1 & usable → poor & -29 & 71.9 $\rightarrow$ 70.8 & 31.6 $\rightarrow$ 42.1 & 0.495 $\rightarrow$ 0.503 \\
+    $\downarrow$ & 10 & Mod 1 & usable → poor & -19 & 73.0 $\rightarrow$ 72.1 & 27.4 $\rightarrow$ 39.0 & 0.504 $\rightarrow$ 0.520 \\
+    $\downarrow$ & 13 & Pooled & usable → poor & -24 & 74.4 $\rightarrow$ 75.0 & 20.4 $\rightarrow$ 40.6 & 0.485 $\rightarrow$ 0.447 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Cells whose overall performance tier changed after applying the training-phase filter. Only the 8 of 48 (rat $\times$ condition) cells whose overall tier changed are shown; the remaining 40 cells kept the same classification in both filter states. For each cell we report the tier transition, the percentage change in trial count ($\Delta n$), and the values of the three fit-derived summary parameters --- accuracy on unambiguous trials, the 97.5-percentile of the session-bootstrap distribution of $\sigma$, and the total lapse rate $\gamma+\lambda$ --- in the unfiltered ($u$) and filtered ($f$) states. Every downgrade is driven by $\sigma_{97.5}$ crossing the $35\degree$ upper bound of the \emph{usable} tier while accuracy remains essentially unchanged.}
+  \label{tab:filter_effect}
+\end{table}

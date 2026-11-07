@@ -33,6 +33,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 from functions_Ale import flatten_model_results
    
 from serial_dependence_analysis import SerialDependenceAnalyzer
@@ -79,13 +81,17 @@ df['angle_visuotactile'] = df['angle']*df['visuotactile']
 features_0 = ['angle']
 features_1 = ['angle', 'tactile', 'visuotactile'] 
 features_2 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile']
-features_3 = ['angle', 'angle_visuotactile', 'angle_tactile'] # this is the best model according to the previous analysis, but it is not very interpretable, as we don't know if the effect of angle is driven by tactile trials, visuotactile trials, or both (it is likely that it is driven by tactile trials, as they are more numerous and have a stronger effect, but we cannot be sure without looking at the coefficients)
+features_3 = ['angle', 'angle_visuotactile', 'angle_tactile'] 
 # FAMILY 2: only angle and history effects (e.g. hit/miss, choice, angle of the previous trial)
 features_4 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile', 'angle_n-1']
 features_5 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile', 'action_n-1']
 features_6 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile', 'angle_n-1', 'action_n-1']
 features_7 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile', 'success_n-1', 'failure_n-1'] 
 features_8 = ['angle', 'tactile', 'visuotactile', 'angle_tactile', 'angle_visuotactile', 'angle_n-1', 'success_n-1', 'failure_n-1']
+# feature 3 # this is the best model according to the previous analysis, but it is not very interpretable, 
+# as we don't know if the effect of angle is driven by tactile trials, visuotactile trials, or both 
+# (it is likely that it is driven by tactile trials, as they are more numerous and have a stronger effect, 
+# but we cannot be sure without looking at the coefficients)
 # ---------------------------------------------------------
 features_10 = ['angle']
 features_11 = ['angle', 'action_n-1']
@@ -95,6 +101,9 @@ features_14 = ['angle', 'action_n-1', 'success_n-1']
 features_15 = ['angle', 'action_n-1', 'failure_n-1']
 features_16 = ['angle', 'action_n-1', 'angle_n-1', 'success_n-1']
 features_17 = ['angle', 'action_n-1', 'angle_n-1', 'failure_n-1', 'hit_n-1']
+features_18 = ['angle', 'hit_n-1', 'angle_n-1', 'success_n-1', 'failure_n-1']
+features_19 = ['angle', 'angle_n-1', 'success_n-1', 'failure_n-1']
+features_20 = ['angle', 'success_n-1', 'failure_n-1']
 
 #FAMILY 1
 #models = [features_0, features_1, features_2, features_3]

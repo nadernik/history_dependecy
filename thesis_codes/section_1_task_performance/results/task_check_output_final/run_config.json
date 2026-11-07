@@ -1,0 +1,65 @@
+{
+  "timestamp": "2026-09-04T23:10:27.228695",
+  "n_boot": 500,
+  "min_trials": 100,
+  "min_sessions": 3,
+  "extreme_margin": 15,
+  "mu_bounds": [
+    0.0,
+    90.0
+  ],
+  "sigma_bounds": [
+    1.0,
+    90.0
+  ],
+  "gamma_bounds": [
+    0.0,
+    0.3
+  ],
+  "lapse_bounds": [
+    0.0,
+    0.3
+  ],
+  "fit_degenerate_sigma": 60.0,
+  "acc_tiers": {
+    "good": 0.8,
+    "medium": 0.65
+  },
+  "sigma_tiers": {
+    "good": 20.0,
+    "medium": 35.0
+  },
+  "lapse_tiers": {
+    "good": 0.15,
+    "medium": 0.3
+  },
+  "filter_kwargs": {
+    "method": "criterion",
+    "criterion": "0.8",
+    "min_consec": "2"
+  },
+  "filter_states": [
+    "unfiltered",
+    "filtered"
+  ],
+  "rats": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    16
+  ],
+  "conditions": [
+    "pooled",
+    "1",
+    "2",
+    "3"
+  ]
+}

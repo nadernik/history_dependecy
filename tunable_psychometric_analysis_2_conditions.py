@@ -58,14 +58,16 @@ COL_CHOICE     = 'action'
 COL_CHOICE_NM1 = 'action_n-1'
 COL_REWARD     = 'hitmiss_n-1'
 COL_RAT        = 'rat'
-
-
+from functions_Ale import filter_training_trials 
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 # -----------------------------
 # LOAD + PREPROCESS
 # -----------------------------
 an = SerialDependenceAnalyzer(history_depth=HISTORY_DEPTH, save_figures=False)
 an.load_and_preprocess_data()
 df = an.create_lagged_features()
+df = filter_training_trials(df)
 modalities = df["mod"].unique()
 # =============================================================================
 # SECTION 1 — Simulate example data

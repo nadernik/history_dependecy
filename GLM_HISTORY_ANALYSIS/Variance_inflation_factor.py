@@ -29,6 +29,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 from functions_Ale import flatten_model_results
    
 from serial_dependence_analysis import SerialDependenceAnalyzer
@@ -90,9 +92,8 @@ df['angle_visuotactile'] = df['angle']*df['visuotactile']
 
 
 predictor_cols = [
-    'angle',
-    'success_n-1', 'angle_n-1',
-    
+    'angle', 'failure_n-1',
+    'success_n-1', 'angle_n-1', 'action_n-1'
 ]
 
 vif_results = []

@@ -1,0 +1,124 @@
+{
+  "configuration": {
+    "analysis_scope": "pooled",
+    "bootstrap_unit": "session",
+    "data_filter_mode": "unfiltered",
+    "fdr_alpha": 0.05,
+    "filter_kwargs": {
+      "criterion": 0.8,
+      "method": "criterion",
+      "min_consec": 2
+    },
+    "geometry_null_radius_deg": 2.0,
+    "history_depth": 1,
+    "inferential_scopes": [
+      "pooled"
+    ],
+    "min_sessions": 3,
+    "min_trials_per_angle": 5,
+    "min_trials_total": 30,
+    "min_unique_angles": 4,
+    "min_valid_boot_count": 100,
+    "min_valid_boot_fraction": 0.8,
+    "modality_codes": {
+      "tactile": 1,
+      "visual": 2,
+      "visuotactile": 3
+    },
+    "n_bootstrap": 5000,
+    "parameter_bounds": {
+      "gamma": [
+        0.0,
+        0.3
+      ],
+      "lapse": [
+        0.0,
+        0.3
+      ],
+      "mu": [
+        0.0,
+        90.0
+      ],
+      "sigma": [
+        1.0,
+        50.0
+      ]
+    },
+    "plots_enabled": true,
+    "primary_contrasts": [
+      "delta_mu_rew",
+      "delta_mu_unrew",
+      "D",
+      "P"
+    ],
+    "pse_flanks": {
+      "1": [
+        40,
+        50
+      ],
+      "10": [
+        40,
+        50
+      ],
+      "11": [
+        40,
+        50
+      ],
+      "12": [
+        40,
+        50
+      ],
+      "13": [
+        40,
+        50
+      ],
+      "16": [
+        40,
+        50
+      ],
+      "2": [
+        40,
+        50
+      ],
+      "3": [
+        40,
+        50
+      ],
+      "5": [
+        40,
+        50
+      ],
+      "6": [
+        40,
+        50
+      ],
+      "7": [
+        40,
+        50
+      ],
+      "9": [
+        40,
+        50
+      ]
+    },
+    "random_seed": 20260912,
+    "use_cached_bootstrap": true
+  },
+  "created_utc": "2026-09-15T07:33:43.594886+00:00",
+  "interpretation": {
+    "D": "outcome-dependent choice contrast; causal interaction requires design identification",
+    "S": "descriptive by default",
+    "omnibus": "complementary 2df and 3df tests, each with a separate BH family; not gatekeepers",
+    "primary_family": "configured direct/planned contrasts across rats",
+    "unfiltered": "no training-performance criterion; basic loader/validity filters remain"
+  },
+  "package_versions": {
+    "matplotlib": "3.10.8",
+    "numpy": "2.4.3",
+    "pandas": "2.3.3",
+    "scipy": "1.17.1"
+  },
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python": "3.11.15",
+  "script": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_3_choice_reward\\Section_3_safe_choice_reward_joint_reward.py"
+}

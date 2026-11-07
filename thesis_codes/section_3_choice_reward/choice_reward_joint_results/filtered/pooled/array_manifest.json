@@ -1,0 +1,40 @@
+{
+  "cell_order": [
+    "h_rew",
+    "v_rew",
+    "h_unrew",
+    "v_unrew"
+  ],
+  "contrast_order": [
+    "delta_mu_rew",
+    "delta_mu_unrew",
+    "S",
+    "D",
+    "P",
+    "choice_main_half",
+    "choice_by_outcome_half",
+    "reward_effect_after_h",
+    "reward_effect_after_v"
+  ],
+  "npz_description": {
+    "contrast_bootstrap": "valid replicates x all named contrasts",
+    "full_cell_parameters": "four cells x four parameters",
+    "full_contrast_estimates": "all named contrasts from full data",
+    "parameter_bootstrap": "valid replicates x four cells x four parameters"
+  },
+  "parameter_order": [
+    "mu",
+    "sigma",
+    "gamma",
+    "lapse"
+  ],
+  "theta_choice_order": [
+    "delta_mu_rew",
+    "delta_mu_unrew"
+  ],
+  "theta_full_order": [
+    "delta_mu_rew",
+    "delta_mu_unrew",
+    "P"
+  ]
+}

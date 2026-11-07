@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-06-08T17:57:06.324437",
+  "normalize_by_angle": true,
+  "min_trials_per_cell": 200,
+  "features_cell": [
+    "angle",
+    "angle_n-1",
+    "hit_n-1",
+    "success_n-1",
+    "failure_n-1"
+  ],
+  "features_hierarchy": [
+    "angle",
+    "tactile",
+    "visuotactile",
+    "angle_tactile",
+    "angle_visuotactile"
+  ],
+  "n_rats": 12,
+  "rats": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    16
+  ],
+  "all_transitions": [
+    "T->T",
+    "T->V",
+    "T->VT",
+    "V->T",
+    "V->V",
+    "V->VT",
+    "VT->T",
+    "VT->V",
+    "VT->VT"
+  ],
+  "n_trials_used": 719421
+}

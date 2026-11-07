@@ -8,10 +8,10 @@
 # =============================
 # CONFIG
 # =============================
-RAT_ID = 9          # pick one rat by its ID as it appears in the 'rat' column
+RAT_ID = 11          # pick one rat by its ID as it appears in the 'rat' column
 MIN_TRIALS = 50      # minimum number of trials in a session to include it
 
-FEATURES = ['angle', 'action_n-1', 'angle_n-1', 'failure_n-1']  # features_17
+FEATURES = ['angle', 'action_n-1', 'angle_n-1', 'success_n-1', 'failure_n-1']  # features to include in the model, must be present in the df after preprocessing (e.g. if you don't create angle_n-1, you can't include it here)
 HISTORY_DEPTH = 1  # how many past trials to include as features (e.g., 1 means only n-1 features)
 
 from matplotlib.ticker import FormatStrFormatter, MaxNLocator
@@ -19,6 +19,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 from functions_Ale import filter_training_trials, flatten_model_results
    
 from serial_dependence_analysis import SerialDependenceAnalyzer
@@ -42,7 +44,7 @@ HITMISS_N1_COL = "hitmiss_n-1"    # trial n-1 outcome (0/1)
 an = SerialDependenceAnalyzer(history_depth=HISTORY_DEPTH, save_figures=False)
 an.load_and_preprocess_data()
 df = an.create_lagged_features()
-df_processed  = filter_training_trials(df_processed, method='criterion', criterion=0.80, min_consec=2)
+#df  = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2)
 
 
 # re-code action_n-1 to be -1 for left and +1 for right, instead of 0/1, so that it can be used in the model as a signed variable (e.g. for interaction with hit_n-1)
@@ -59,7 +61,7 @@ df['hit_n-1'] = 1 - df['hit_n-1'] # TMEPORARY
 # FILTER TO ONE RAT
 # =============================
 df_rat = df[df['rat'] == RAT_ID].copy()
-df_rat = df_rat[df_rat['mod'] == 1].copy()  # TEMPORARY: filter to tactile trials only, to increase power for now, we can look at modality differences later
+#df_rat = df_rat[df_rat['mod'] == 1].copy()  # TEMPORARY: filter to tactile trials only, to increase power for now, we can look at modality differences later
 # =============================
 # GET SESSIONS (sorted chronologically)
 # =============================
@@ -85,6 +87,11 @@ for session in sessions:
         scaling='cont_only', 
         cv_split=False,  # set to True to get cross-validated scores (but it will break here because we are fitting one glm per session and cv needs at least 5 sessions to split into folds)
     )
+
+        # Guard: function may drop trials internally and return nothing for this rat
+    if RAT_ID not in result:
+        print(f"  Skipping session {session}: insufficient trials after internal filtering")
+        continue
     
     values = result[RAT_ID]['coefficients']
     keys = result[RAT_ID]['feature_names']

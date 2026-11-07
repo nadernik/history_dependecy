@@ -167,3 +167,20 @@ results_*
 
 # Personal drafts and experiments
 others/
+
+# --- various temporary files (regeneratable outputs) ---
+# These are produced by analysis scripts and reproducible from code + seeds.
+# They would also exceed GitHub's size limits.
+# If a specific small file of these types must be tracked, add a !exception line.
+*.parquet
+*.pkl
+*.rds
+*.rdata
+*.RData
+*.npz
+*.npy
+*.feather
+*.joblib
+*.h5
+*.hdf5
+*.gz

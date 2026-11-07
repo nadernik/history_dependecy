@@ -6,7 +6,8 @@
 # The former allows you to fit the curve on single-trial data, without binning, but it is more sensitive to noise and outliers, 
 # while the latter is more robust but requires binning the data into angle groups and computing the proportion of correct responses for each group.
 # This script uses the first method (fitting on single-trial data) but I can easily change it to the second method if we decide to go with that one.
-
+import sys
+sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,7 +16,7 @@ from scipy.special import erf
 from serial_dependence_analysis import SerialDependenceAnalyzer
 from functions_Ale import filter_training_trials
 
-RAT_ID    = 6  # <-- change this to run on a different rat
+RAT_ID    = 4  # <-- change this to run on a different rat
 ANGLE_COL = 'angle'
 RESP_COL  = 'action'
 RAT_COL   = 'rat'

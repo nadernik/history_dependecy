@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\centering
+\caption{Design-matrix multicollinearity diagnostics: pooled vs. modality-interaction GLM}
+\label{tab:vif-matrix-summary}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Predictors & Full rank & Condition number & Max VIF & Terms VIF\textgreater5 & Terms VIF\textgreater10 \\
+\midrule
+Pooled & 5 & 12/12 rats & 3.86--4.13 & 4.17--4.71 & 0 & 0 \\
+Modality interaction & 17 & 12/12 rats & 10.47--12.36 & 9.84--12.47 & 6--7 & 0--2 \\
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+\par\noindent
+\begin{minipage}{\linewidth}\small Range across the 12 rats. Condition number computed on the scaled design matrix (each column at unit variance), i.e. the ratio of largest to smallest singular value; a value below approximately 30 is conventionally not considered indicative of a numerically problematic design. VIF thresholds of 5 and 10 follow common convention. No infinite VIFs (i.e. no exact collinearity) were found in either model for any rat.\end{minipage}
+\end{table}

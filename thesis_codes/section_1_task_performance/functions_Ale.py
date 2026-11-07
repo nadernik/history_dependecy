@@ -283,6 +283,44 @@ def plot_angle_diagnostics(df, title="Angle distribution", n_cols=4, save_csv=No
 
     print(f"\n{'='*70}\n")
 
+def get_task_start_trial(session_df, warmup_angles=(0, 90),
+                          window_size=10, max_warmup_fraction=0.30,
+                          angle_col='angle', trial_id_col='trialID'):
+    """
+    Return the trialID at which the real task phase begins.
+
+    Slides a forward-looking window of `window_size` trials over the
+    session; the task phase begins at the first position where the
+    fraction of warmup-angle trials in the window drops to
+    <= max_warmup_fraction. Returns the trialID of the first
+    non-warmup trial at/after that position (so the kept trial itself
+    is a real task trial).
+    """
+    s = session_df.sort_values(trial_id_col).reset_index(drop=True)
+    angles    = s[angle_col].values
+    trial_ids = s[trial_id_col].values
+
+    valid     = ~pd.isna(angles)
+    is_warmup = np.isin(angles, list(warmup_angles)) & valid
+
+    n = len(angles)
+    if n == 0:
+        return None
+    w = min(window_size, n)
+
+    for i in range(n - w + 1):
+        wv = valid[i:i + w]
+        if wv.sum() == 0:
+            continue
+        frac_warmup = is_warmup[i:i + w].sum() / wv.sum()
+        if frac_warmup <= max_warmup_fraction:
+            # anchor the cut on a real (non-warmup, non-NaN) trial
+            for j in range(i, n):
+                if valid[j] and not is_warmup[j]:
+                    return trial_ids[j]
+            return None
+    return None
+
 
 def filter_training_trials(
     df,
@@ -311,8 +349,12 @@ def filter_training_trials(
 
     Returns
     -------
-    Filtered dataframe with a 'first_real_trial' column added.
-
+    Filtered dataframe with columns added: 
+    'first_real_trial' 
+    'date_real'
+    'session_idx'
+    'first_real_trial'
+    
     To call it: 
     df_fixed = filter_training_trials(df, method='fixed', n_training=5)
     df_crit  = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=4)
@@ -326,12 +368,14 @@ def filter_training_trials(
     def get_first_real_trial(session_df):
         session_sorted = session_df.sort_values(trial_id_col)
         for _, row in session_sorted.iterrows():
-            if row[angle_col] not in warmup_set:
+            if pd.notna(row[angle_col]) and row[angle_col] not in warmup_set:
                 return row[trial_id_col]
         return None
 
+    #def matlab_datenum_to_datetime(datenum):
+        #return pd.Timestamp('0000-01-01') + pd.to_timedelta(datenum - 1, unit='D')
     def matlab_datenum_to_datetime(datenum):
-        return pd.Timestamp('0000-01-01') + pd.to_timedelta(datenum - 1, unit='D')
+        return pd.to_datetime(datenum - 719529, unit='D')
 
     df['date_real'] = df['date'].apply(matlab_datenum_to_datetime)
     df = df.sort_values(['rat', 'date_real']).reset_index(drop=True)
@@ -343,7 +387,7 @@ def filter_training_trials(
     
     first_real = (
         df.groupby(['rat', 'session_idx'])
-        .apply(get_first_real_trial)
+        .apply(get_task_start_trial)
         .rename('first_real_trial')
         .reset_index()
     )
@@ -366,8 +410,30 @@ def filter_training_trials(
 
     elif method == 'criterion':
         def get_criterion_session(rat_df):
-            trained = rat_df[rat_df[angle_col].isin(warmup_angles)]
-            acc = trained.groupby('session_idx')[outcome_col].mean()
+            #easy = rat_df[rat_df[angle_col].isin(warmup_angles)]
+            easy = rat_df[
+                (rat_df[angle_col] <= 15) |
+                (rat_df[angle_col] >= 75)
+            ]
+            # check the numebr of trials at easy angles per session
+            easy_counts = easy.groupby('session_idx').size()
+            # use only sessions with at least 10 easy trials to compute accuracy
+            # but I should be oke in any case because I don't have any session with less than 10 easy trials
+            rat_id = rat_df['rat'].iloc[0]
+            low_count_sessions = easy_counts[easy_counts < 50]
+
+            if low_count_sessions.empty:
+                print(
+                    f"Rat {rat_id}: all sessions have at least "
+                    f"50 easy trials."
+                )
+            else:
+                print(
+                    f"Rat {rat_id}: sessions with fewer than "
+                    f"50 easy trials:\n{low_count_sessions}"
+                )
+
+            acc = easy.groupby('session_idx')[outcome_col].mean()
             consec = 0
             for sess, val in acc.items():
                 if val >= criterion:

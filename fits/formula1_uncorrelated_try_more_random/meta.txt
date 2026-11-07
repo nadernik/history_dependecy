@@ -1,0 +1,6 @@
+aic=474944.645756891
+logLik=-237450.322878445
+n_obs=479012
+singular=FALSE
+converged=TRUE
+fit_minutes=38.45

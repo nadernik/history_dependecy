@@ -1,0 +1,32 @@
+\begin{table}[htbp]
+\centering
+\caption{Variance inflation factors: modality-interaction model (17 predictors)}
+\label{tab:vif-modality-interaction}
+\begin{tabular}{lccccc}
+\toprule
+Predictor & Min VIF & Mean VIF & Max VIF & Rats VIF\textgreater5 & Rats VIF\textgreater10 \\
+\midrule
+angle\_n-1 & $\hphantom{0}9.84$ & $11.29$ & $12.47$ & 12/12 & 10/12 \\
+success\_n-1 & $\hphantom{0}9.05$ & $10.27$ & $11.48$ & 12/12 & 8/12 \\
+mod\_VT:angle\_n-1 & $\hphantom{0}7.09$ & $\hphantom{0}7.95$ & $\hphantom{0}8.60$ & 12/12 & 0/12 \\
+mod\_V:angle\_n-1 & $\hphantom{0}6.72$ & $\hphantom{0}7.59$ & $\hphantom{0}8.33$ & 12/12 & 0/12 \\
+mod\_VT:success\_n-1 & $\hphantom{0}6.71$ & $\hphantom{0}7.28$ & $\hphantom{0}7.87$ & 12/12 & 0/12 \\
+mod\_V:success\_n-1 & $\hphantom{0}6.11$ & $\hphantom{0}6.91$ & $\hphantom{0}7.77$ & 12/12 & 0/12 \\
+failure\_n-1 & $\hphantom{0}3.22$ & $\hphantom{0}4.01$ & $\hphantom{0}5.09$ & 1/12 & 0/12 \\
+\midrule
+mod\_VT:failure\_n-1 & $\hphantom{0}2.27$ & $\hphantom{0}2.75$ & $\hphantom{0}3.46$ & 0/12 & 0/12 \\
+reward\_n-1 & $\hphantom{0}2.18$ & $\hphantom{0}2.73$ & $\hphantom{0}3.73$ & 0/12 & 0/12 \\
+mod\_V:failure\_n-1 & $\hphantom{0}2.24$ & $\hphantom{0}2.71$ & $\hphantom{0}3.50$ & 0/12 & 0/12 \\
+angle & $\hphantom{0}2.08$ & $\hphantom{0}2.63$ & $\hphantom{0}2.98$ & 0/12 & 0/12 \\
+mod\_VT:reward\_n-1 & $\hphantom{0}2.12$ & $\hphantom{0}2.54$ & $\hphantom{0}3.23$ & 0/12 & 0/12 \\
+mod\_V:reward\_n-1 & $\hphantom{0}1.96$ & $\hphantom{0}2.45$ & $\hphantom{0}3.19$ & 0/12 & 0/12 \\
+mod\_VT & $\hphantom{0}1.54$ & $\hphantom{0}1.92$ & $\hphantom{0}2.51$ & 0/12 & 0/12 \\
+mod\_V & $\hphantom{0}1.54$ & $\hphantom{0}1.89$ & $\hphantom{0}2.50$ & 0/12 & 0/12 \\
+mod\_VT:angle & $\hphantom{0}1.59$ & $\hphantom{0}1.86$ & $\hphantom{0}2.02$ & 0/12 & 0/12 \\
+mod\_V:angle & $\hphantom{0}1.49$ & $\hphantom{0}1.79$ & $\hphantom{0}1.97$ & 0/12 & 0/12 \\
+\bottomrule
+\end{tabular}
+\vspace{4pt}
+\par\noindent
+\begin{minipage}{\linewidth}\small Ranked by mean VIF across the 12 rats. Inflation is concentrated in angle\_n-1, success\_n-1, and their two modality crosses each (6 terms, upper block); the remaining terms (lower block) stay below VIF=5 in every rat, including angle's own modality interactions -- ruling out a global (rather than per-modality) angle-centering artifact as the cause. Matrix remains full rank (17/17) in every rat; no infinite VIFs. mod\_V / mod\_VT are treatment-coded modality dummies (reference: visuotactile).\end{minipage}
+\end{table}

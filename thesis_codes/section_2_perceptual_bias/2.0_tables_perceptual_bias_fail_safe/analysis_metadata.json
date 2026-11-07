@@ -1,0 +1,122 @@
+{
+  "created_utc": "2026-09-23T08:49:32.713333+00:00",
+  "analysis_script": "perceptual_bias_test_revised_thesis.py",
+  "n_trials_in_final_filtered_dataset": 126901,
+  "rats_requested": "all",
+  "rats_in_final_filtered_dataset": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    16
+  ],
+  "modalities": [
+    "1",
+    "2",
+    "3"
+  ],
+  "column_names": {
+    "rat": "rat",
+    "session": "date",
+    "modality": "mod",
+    "current_angle": "angle",
+    "previous_difficulty": "difficulty_n-1",
+    "evidence_for_repetition": "evidence_4_repetition",
+    "repeat_response": "repeated_action",
+    "previous_outcome": "hitmiss_n-1"
+  },
+  "filters": {
+    "current_angle_range_inclusive": [
+      0,
+      90
+    ],
+    "previous_angle_range_inclusive": [
+      0,
+      90
+    ],
+    "previous_difficulty_range_inclusive": [
+      -46,
+      45
+    ],
+    "previous_trial_correct_only": true,
+    "ambiguous_previous_difficulty_zero_excluded": true,
+    "training_filter_method": "criterion",
+    "training_filter_criterion": 0.8,
+    "training_filter_min_consecutive": 2
+  },
+  "fit": {
+    "model": "four_parameter_cumulative_gaussian: gamma + (1-gamma-lapse)*Phi((x-mu)/sigma)",
+    "estimation": "Bernoulli maximum likelihood (L-BFGS-B)",
+    "parameter_order": [
+      "mu",
+      "sigma",
+      "gamma",
+      "lapse"
+    ],
+    "parameter_bounds": {
+      "mu": [
+        -45,
+        45
+      ],
+      "sigma": [
+        1,
+        50
+      ],
+      "gamma": [
+        0,
+        0.4
+      ],
+      "lapse": [
+        0,
+        0.4
+      ]
+    },
+    "starting_values": [
+      0.0,
+      15.0,
+      0.05,
+      0.05
+    ]
+  },
+  "binning": {
+    "n_difficulty_bins": 3,
+    "method": "sorted valid difficulty levels split with numpy.array_split",
+    "minimum_trials_per_original_difficulty_level": 20,
+    "semantic_bin_names": {
+      "3": "easy",
+      "2": "medium",
+      "1": "hard"
+    }
+  },
+  "bootstrap": {
+    "unit": "session",
+    "joint_across_difficulty_bins": true,
+    "n_requested": 1000,
+    "seed": 20260912,
+    "minimum_sessions": 3,
+    "minimum_valid_fraction": 0.8,
+    "confidence_interval_percentiles": [
+      2.5,
+      97.5
+    ]
+  },
+  "multiple_comparisons": {
+    "method": "Benjamini-Hochberg",
+    "alpha": 0.05,
+    "family": "available primary extreme-bin contrasts across rat x modality"
+  },
+  "plotting_defaults_used_during_run": {
+    "x_grid_min": -45.0,
+    "x_grid_max": 45.0,
+    "x_grid_n": 200,
+    "n_empirical_points_displayed": 5,
+    "bubble_scale": 0.5
+  }
+}

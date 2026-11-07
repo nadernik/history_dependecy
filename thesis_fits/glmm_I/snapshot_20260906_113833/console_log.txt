@@ -1,0 +1,112 @@
+
+
+[22:53:02] Dropping first-of-session trials...
+  dropped first-of-session:      2693 trials
+  final:                       588289 trials,  12 rats
+[22:53:03] Coding predictors for GLMM...
+  dropped 22 rows with NA in required predictors
+  final for R:                 588267 trials
+  modalities present:        ['tactile', 'visual', 'visuotactile']
+  n rats:                    12
+  n sessions:                812
+
+[22:53:08] Launching R fit (primary)...
+  formula: action ~ angle_c * modality + angle_prev_c + reward_prev + success_prev + failure_prev + (1 | rat) + (0 + angle_c | rat) + (0 + angle_prev_c | rat) + (0 + reward_prev | rat) + (0 + success_prev + failure_prev | rat) + (1 | rat:date)
+  out:     C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_fits\glmm_I\glmm_I_primary
+Warning message:
+package 'lme4' was built under R version 4.4.3 
+[2026-09-05 22:53:10] R fit started
+  formula: action ~ angle_c * modality + angle_prev_c + reward_prev + success_prev + failure_prev + (1 | rat) + (0 + angle_c | rat) + (0 + angle_prev_c | rat) + (0 + reward_prev | rat) + (0 + success_prev + failure_prev | rat) + (1 | rat:date)
+  nAGQ = 1; optimizer = bobyqa; maxfun = 100000; profile CI = FALSE
+  n_obs = 588267; n_rats = 12; n_sessions = 812
+  modality reference: visuotactile (levels: visuotactile, tactile, visual)
+[2026-09-05 22:53:13] Starting glmer (verbose)...
+npt = 10 , n =  8 
+rhobeg =  0.2 , rhoend =  2e-07 
+start par. =  1 1 0 1 1 1 1 1 fn =  556701.5 
+rho:    0.020 eval:  13 fn:      555617. par:0.600027 0.998673 -4.08830e-05 0.998630 0.998624 0.998612 0.998612 0.998753 
+rho:   0.0020 eval:  26 fn:            555590. par:0.545588 0.953851 -0.0117273 0.953258  1.01390 0.994210 0.993484 0.954956 
+rho:  0.00020 eval: 127 fn:            555432. par:0.549798 0.655877 0.241029 0.820185 0.853534 0.00277642  1.21994 0.360183 
+rho:  2.0e-05 eval: 139 fn:            555431. par:0.549303 0.655738 0.240393 0.819601 0.853178 0.00214404  1.21946 0.359716 
+rho:  2.0e-06 eval: 158 fn:            555431. par:0.549707 0.655843 0.240354 0.819687 0.853033 0.00213400  1.21936 0.359748 
+rho:  2.0e-07 eval: 19297 fn:      555224. par:0.552833 0.223926 -0.102117 0.0647373 0.0792583 0.00220964 0.0101339 0.333018 
+At return
+eval: 19367 fn:      555224.12 par: 0.552832 0.223945 -0.102141 0.0647467 0.0792601 0.00220962 0.0101336 0.333009
+npt = 20 , n =  18 
+rhobeg =  2e-04 , rhoend =  2e-07 
+start par. =  0.5528316 0.2239452 -0.1021409 0.06474667 0.07926007 0.002209625 0.01013356 0.3330091 0.09054281 0.09088755 -0.06637501 -0.01524045 0.004590231 0.03939187 -0.02910762 0.07731033 -0.06067861 -0.03259209 fn =  555224.1 
+rho:  2.0e-05 eval:  22 fn:            555224. par:0.552831 0.223945 -0.102141 0.0647466 0.0792600 0.00219347 0.0101325 0.333009 0.0905428 0.0910886 -0.0663752 -0.0152404 0.00458303 0.0393919 -0.0291076 0.0773104 -0.0608777 -0.0326001 
+rho:  2.0e-06 eval:  64 fn:            555224. par:0.552823 0.223939 -0.102154 0.0646963 0.0792371 0.00220718 0.0101159 0.333005 0.0905480 0.0911893 -0.0663544 -0.0152368 0.00460551 0.0393991 -0.0290945 0.0772760 -0.0609303 -0.0327100 
+rho:  2.0e-07 eval: 317 fn:            555224. par:0.552836 0.223927 -0.102192 0.0646578 0.0792068 0.00220812 0.0101265 0.333013 0.0905272 0.0913610 -0.0664124 -0.0152223 0.00461475 0.0393981 -0.0290651 0.0772438 -0.0609405 -0.0327183 
+At return
+eval: 675 fn:      555223.55 par: 0.552836 0.223978 -0.102180 0.0645945 0.0791842 0.00221000 0.0101309 0.333042 0.0905064 0.0913668 -0.0665140 -0.0152112 0.00461733 0.0393998 -0.0290064 0.0772870 -0.0609403 -0.0327181
+[2026-09-06 10:21:12] Fit complete in 688.0 min
+[2026-09-06 10:21:26] R fit done
+
+[10:21:27] Primary fit accepted (no fallback triggers fired).
+
+========================================================================
+RESULT: primary
+========================================================================
+
+-- Meta --
+  aic: 555259.548585393
+  bic: 555462.677437091
+  logLik: -277611.774292696
+  df_residual: 588249
+  n_obs: 588267
+  n_rats: 12
+  n_sessions: 812
+  singular: FALSE
+  converged: TRUE
+  fit_minutes: 687.98
+  optimizer: bobyqa
+  nAGQ: 1
+
+-- Fixed effects --
+                   term  estimate     se         z      p
+            (Intercept)    0.0905 0.0963    0.9399 0.3473
+                angle_c    0.0914 0.0029   30.9948 0.0000
+        modalitytactile   -0.0665 0.0090   -7.4144 0.0000
+         modalityvisual   -0.0152 0.0096   -1.5856 0.1128
+           angle_prev_c    0.0046 0.0007    6.6244 0.0000
+            reward_prev    0.0394 0.0248    1.5872 0.1125
+           success_prev   -0.0290 0.0654   -0.4432 0.6576
+           failure_prev    0.0773 0.0364    2.1228 0.0338
+angle_c:modalitytactile   -0.0609 0.0004 -159.2673 0.0000
+ angle_c:modalityvisual   -0.0327 0.0004  -77.7900 0.0000
+
+-- S_beta / D_beta contrasts --
+contrast  estimate     se  ci_low  ci_high       z      p  estimate_dp  se_dp  ci_low_dp  ci_high_dp
+  S_beta    0.0483 0.0411 -0.0323   0.1289  1.1739 0.2404       0.0241 0.0206    -0.0162      0.0644
+  D_beta   -0.1063 0.0976 -0.2976   0.0850 -1.0890 0.2761      -0.0531 0.0488    -0.1488      0.0425
+
+-- Heterogeneity --
+  quantity   value
+     tau_S  0.2240
+     tau_F  0.1209
+tau_SF_cov -0.0229
+    cor_SF -0.8453
+tau_S_beta  0.1379
+tau_D_beta  0.3325
+
+-- Random-effect variances --
+     grp         var1         var2    vcov   sdcor
+rat.date  (Intercept)          NaN  0.3056  0.5528
+     rat success_prev          NaN  0.0502  0.2240
+     rat failure_prev          NaN  0.0146  0.1209
+     rat success_prev failure_prev -0.0229 -0.8453
+   rat.1  reward_prev          NaN  0.0063  0.0792
+   rat.2 angle_prev_c          NaN  0.0000  0.0022
+   rat.3      angle_c          NaN  0.0001  0.0101
+   rat.4  (Intercept)          NaN  0.1109  0.3330
+
+-- Modality baselines (at angle_c = 0) --
+    modality  baseline_logit  baseline_prob
+visuotactile          0.0905         0.5226
+     tactile          0.0240         0.5060
+      visual          0.0753         0.5188
+
+Saved full result dict to C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_fits\glmm_I\glmm_I_full.pkl
+
+[10:21:27] All done in 690.5 minutes total. Used PRIMARY.

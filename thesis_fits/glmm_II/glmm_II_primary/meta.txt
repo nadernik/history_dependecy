@@ -1,0 +1,13 @@
+aic=561059.242671509
+bic=561330.08114044
+logLik=-280505.621335755
+df_residual=588243
+n_obs=588267
+n_rats=12
+n_sessions=812
+n_fixed=18
+singular=FALSE
+converged=TRUE
+fit_minutes=345.31
+optimizer=bobyqa
+nAGQ=1

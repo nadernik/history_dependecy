@@ -1,0 +1,39 @@
+{
+  "analysis": "pooled_glm_log_odds_history_inference",
+  "total_inferential_rows": 48,
+  "families": {
+    "choice_outcome_36": {
+      "size": 36,
+      "coefficients": [
+        "beta_reward_n-1",
+        "beta_success_n-1",
+        "beta_failure_n-1"
+      ],
+      "correction": "Benjamini-Hochberg within these 36 tests"
+    },
+    "stimulus_history_12": {
+      "size": 12,
+      "coefficients": [
+        "beta_angle_n-1"
+      ],
+      "correction": "Benjamini-Hochberg within these 12 tests"
+    }
+  },
+  "excluded_from_inference": [
+    "intercept",
+    "beta_angle"
+  ],
+  "subset": "pooled",
+  "C": "unpenalized",
+  "scale": "log_odds",
+  "alpha": 0.05,
+  "p_value_method": "Two-sided equal-tail bootstrap p-value with plus-one correction",
+  "inputs": {
+    "glm_summary": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\glm_summary_long.csv",
+    "bootstrap_draws": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\glm_bootstrap_draws.parquet"
+  },
+  "outputs": {
+    "canonical": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\canonical_inference\\pooled_glm_log_odds_inference_48.csv",
+    "table_compatible": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\canonical_inference\\glm_coefficient_significance_unpenalized.csv"
+  }
+}
