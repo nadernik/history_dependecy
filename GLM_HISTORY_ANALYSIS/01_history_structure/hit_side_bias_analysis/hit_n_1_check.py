@@ -9,11 +9,18 @@ alongside features_19 = ['angle', 'angle_n-1', 'success_n-1', 'failure_n-1'] and
     negative = features_19 wins (hit_n-1 does not help; null claim on pure reward)
   - classifies each fit: 'pure_reward_present' / 'no_pure_reward' / 'ambiguous'
 
-Usage: adapt the DATA LOADING block to your pipeline. Mirrors the structure of
-glm_history_tests.py so you can drop it into the same working directory.
+Usage: run it from anywhere. The preprocessing is written out in the MAIN block
+(switches APPLY_TRAINING_FILTER and DROP_PREV_ANGLE_45 below). Mirrors the
+structure of glm_test_choice_reward_choice_x_reward.py (same settings).
 """
 
 from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,8 +31,19 @@ from sklearn.metrics import log_loss
 from scipy.stats import binomtest
 
 # ============================================================
-# CONFIG (match glm_history_tests.py)
+# PATHS (computed from this file, so the script runs from any folder / computer)
 # ============================================================
+
+HERE = Path(__file__).resolve().parent     # results are saved in this folder
+ROOT = HERE.parents[2]                      # project root (history_dependecy)
+
+# ============================================================
+# CONFIG (same settings as glm_test_choice_reward_choice_x_reward.py)
+# ============================================================
+
+# Preprocessing choices. Both False = the August 2026 setup (hit_n1_test_summary.csv was made like that).
+APPLY_TRAINING_FILTER = True    # functions_Ale.filter_training_trials, criterion 0.80, 2 consecutive sessions
+DROP_PREV_ANGLE_45 = True       # drop trials whose previous angle is 45 (their hit/miss was recorded at random)
 
 MODE = "per_modality"           # 'pooled' or 'per_modality'
 N_BOOT = 1000
@@ -205,20 +223,60 @@ def summarize(summary_df):
 
 
 # ============================================================
-# USAGE (adapt DATA LOADING block)
+# RUN METADATA
+# ============================================================
+
+def write_run_metadata(path, df, config):
+    """Save what is needed to repeat the run: date, git commit, settings,
+    library versions and number of trials per rat."""
+    import joblib, numpy, scipy, sklearn
+    git = {"commit": None, "uncommitted_changes": None}
+    try:
+        run = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True,
+                                        text=True, timeout=10).stdout.strip()
+        git = {"commit": run("rev-parse", "HEAD") or None,
+               "uncommitted_changes": bool(run("status", "--porcelain"))}
+    except Exception:
+        pass
+    meta = {
+        "script": Path(__file__).name,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "git": git,
+        "config": config,
+        "library_versions": {
+            "python": sys.version.split()[0], "numpy": numpy.__version__,
+            "pandas": pd.__version__, "scipy": scipy.__version__,
+            "scikit-learn": sklearn.__version__, "joblib": joblib.__version__,
+        },
+        "rows_after_preprocessing": int(len(df)),
+        "rows_per_rat_after_preprocessing": {str(k): int(v) for k, v in df.groupby("rat").size().items()},
+    }
+    Path(path).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+
+# ============================================================
+# MAIN
 # ============================================================
 
 if __name__ == "__main__":
-    # --- adapt this block to your pipeline (identical to main script) ---
-    import sys
-    sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+    # ---- data loading and preprocessing (explicit; same block in the three scripts) ----
+    sys.path.append(str(ROOT))      # serial_dependence_analysis.py and functions_Ale.py are in the project root
     from serial_dependence_analysis import SerialDependenceAnalyzer
     from functions_Ale import filter_training_trials
-    an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
+
+    an = SerialDependenceAnalyzer(history_depth=1, save_figures=False,
+                                  data_path=str(ROOT / "data" / "behavior_data.mat"),
+                                  csv_path=str(ROOT / "processed_behavior_data.csv"))
     an.load_and_preprocess_data()
     df = an.create_lagged_features()
-    #df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2) 
-    #
+
+    if APPLY_TRAINING_FILTER:
+        df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2)
+    if DROP_PREV_ANGLE_45:
+        # the hit/miss of 45-degree trials was recorded at random (data collection bug), so the
+        # trial after them has no reliable outcome history. Done before the angles are centered.
+        df = df[df['angle_n-1'] != 45].copy()
+
     df['action_n-1'] = df['action_n-1'] * 2 - 1
     df['success_n-1'] = df['hit_n-1'] * df['action_n-1']
     df['failure_n-1'] = (1 - df['hit_n-1']) * df['action_n-1']
@@ -228,5 +286,12 @@ if __name__ == "__main__":
 
     results_df = run(df, mode=MODE, n_boot=N_BOOT)
     summarize(results_df)
-    results_df.to_csv("hit_n1_test_summary.csv", index=False)
-    pass
+    out_csv = HERE / "hit_n1_test_summary.csv"      # read by hit_n_1_check2.py
+    results_df.to_csv(out_csv, index=False)
+    print(f"Saved {out_csv} ({len(results_df)} rows)")
+
+    write_run_metadata(HERE / "hit_n1_test_metadata.json", df, {
+        "apply_training_filter": APPLY_TRAINING_FILTER, "drop_prev_angle_45": DROP_PREV_ANGLE_45,
+        "mode": MODE, "min_trials": MIN_TRIALS, "n_boot": N_BOOT, "ci_level": CI_LEVEL,
+        "random_state": RANDOM_STATE, "ridge_c": RIDGE_C,
+    })

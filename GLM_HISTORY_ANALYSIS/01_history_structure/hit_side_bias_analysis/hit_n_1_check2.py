@@ -19,11 +19,21 @@ Goals:
    - Correlation between beta_hit_n-1 and beta_success_n-1.
    - Scatter plots.
 
-Usage: adapt the DATA LOADING block. Requires the existing glm_summary.csv
-(from the previous run) in the same folder.
+Usage: run it from anywhere. The preprocessing is written out in the MAIN block
+(switches APPLY_TRAINING_FILTER and DROP_PREV_ANGLE_45 below). It reads
+glm_summary.csv (written by glm_test_choice_reward_choice_x_reward.py) and
+hit_n1_test_summary.csv (written by hit_n_1_check.py) from this folder, and
+saves side_bias_per_fit.csv and side_bias_analysis.png in this folder too.
 """
 
 from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -31,12 +41,23 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from scipy.stats import pearsonr, spearmanr
-import os
+
 # ============================================================
-# CONFIG (match glm_history_tests.py)
+# PATHS (computed from this file, so the script runs from any folder / computer)
 # ============================================================
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+HERE = Path(__file__).resolve().parent     # inputs are read from, and results saved in, this folder
+ROOT = HERE.parents[2]                      # project root (history_dependecy)
+
+# ============================================================
+# CONFIG (same settings as the two scripts that produce its inputs)
+# ============================================================
+
+# Preprocessing choices. Both False = the August 2026 setup (side_bias_per_fit.csv was made like that).
+APPLY_TRAINING_FILTER = True    # functions_Ale.filter_training_trials, criterion 0.80, 2 consecutive sessions
+DROP_PREV_ANGLE_45 = True       # drop trials whose previous angle is 45 (their hit/miss was recorded at random)
+
+SCRIPT_DIR = str(HERE)
 SUMMARY_CSV = os.path.join(SCRIPT_DIR, "glm_summary.csv")
 HIT_TEST_CSV = os.path.join(SCRIPT_DIR, "hit_n1_test_summary.csv")
 MODE = "per_modality"
@@ -248,23 +269,110 @@ def summarize_and_plot(merged_df, hit_test_df=None):
         ax.set_title(r"$\beta_{hit_{n-1}}$ vs $\beta_{success_{n-1}}$")
 
     plt.tight_layout()
-    plt.savefig("side_bias_analysis.png", dpi=120)
-    print("\nSaved plot to side_bias_analysis.png")
+    out_png = os.path.join(SCRIPT_DIR, "side_bias_analysis.png")
+    plt.savefig(out_png, dpi=120)
+    print(f"\nSaved plot to {out_png}")
 
 
 # ============================================================
-# USAGE
+# GUARD: do the input tables match this run's preprocessing?
+# ============================================================
+
+def check_input_consistency(df, config):
+    """Compare this run's preprocessing with the runs that made glm_summary.csv (step 1) and
+    hit_n1_test_summary.csv (step 2), using the metadata file each of them saves next to its CSV.
+    Returns a list of problems (empty list = consistent)."""
+    problems = []
+    inputs = [("glm_summary.csv", "glm_summary_metadata.json"),
+              ("hit_n1_test_summary.csv", "hit_n1_test_metadata.json")]
+    for csv_name, meta_name in inputs:
+        meta_path = HERE / meta_name
+        if not meta_path.exists():
+            problems.append(f"{csv_name} has no metadata file ({meta_name}): it comes from the original "
+                            "run, with no training filter and trials after a 45-degree trial kept.")
+            continue
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        for key, label in [("apply_training_filter", "training filter"),
+                           ("drop_prev_angle_45", "exclusion of previous angle 45")]:
+            if meta["config"].get(key) != config[key]:
+                problems.append(f"{csv_name} was made with {label} = {meta['config'].get(key)}, "
+                                f"this run uses {config[key]}.")
+        if meta.get("rows_after_preprocessing") != int(len(df)):
+            problems.append(f"{csv_name} was made on {meta.get('rows_after_preprocessing')} rows after "
+                            f"preprocessing, this run has {len(df)} (different data or preprocessing).")
+    return problems
+
+
+def print_consistency_warning(problems):
+    if not problems:
+        return
+    print("\n" + "!" * 78)
+    print("WARNING: the input tables do not match the preprocessing of this run")
+    for p in problems:
+        print("  - " + p)
+    print("The merged outputs that use them mix two datasets: the correlation of beta_hit with")
+    print("beta_success, the list of fits with delta BIC > 2, the repeater / switcher labels and the")
+    print("third scatter plot. The side-bias comparisons (intercept, P(vertical) at 45) are not affected.")
+    print("To fix it, rerun glm_test_choice_reward_choice_x_reward.py and hit_n_1_check.py (steps 1")
+    print("and 2) with the same switches as this script, then rerun this one.")
+    print("!" * 78 + "\n")
+
+
+# ============================================================
+# RUN METADATA
+# ============================================================
+
+def write_run_metadata(path, df, config):
+    """Save what is needed to repeat the run: date, git commit, settings,
+    library versions and number of trials per rat."""
+    import joblib, numpy, scipy, sklearn
+    git = {"commit": None, "uncommitted_changes": None}
+    try:
+        run = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True,
+                                        text=True, timeout=10).stdout.strip()
+        git = {"commit": run("rev-parse", "HEAD") or None,
+               "uncommitted_changes": bool(run("status", "--porcelain"))}
+    except Exception:
+        pass
+    meta = {
+        "script": Path(__file__).name,
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "git": git,
+        "config": config,
+        "library_versions": {
+            "python": sys.version.split()[0], "numpy": numpy.__version__,
+            "pandas": pd.__version__, "scipy": scipy.__version__,
+            "scikit-learn": sklearn.__version__, "joblib": joblib.__version__,
+        },
+        "rows_after_preprocessing": int(len(df)),
+        "rows_per_rat_after_preprocessing": {str(k): int(v) for k, v in df.groupby("rat").size().items()},
+    }
+    Path(path).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+
+# ============================================================
+# MAIN
 # ============================================================
 
 if __name__ == "__main__":
-    # --- adapt this block to your pipeline ---
-    import sys
-    sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+    # ---- data loading and preprocessing (explicit; same block in the three scripts) ----
+    sys.path.append(str(ROOT))      # serial_dependence_analysis.py and functions_Ale.py are in the project root
     from serial_dependence_analysis import SerialDependenceAnalyzer
+    from functions_Ale import filter_training_trials
 
-    an = SerialDependenceAnalyzer(history_depth=1, save_figures=False)
+    an = SerialDependenceAnalyzer(history_depth=1, save_figures=False,
+                                  data_path=str(ROOT / "data" / "behavior_data.mat"),
+                                  csv_path=str(ROOT / "processed_behavior_data.csv"))
     an.load_and_preprocess_data()
     df = an.create_lagged_features()
+
+    if APPLY_TRAINING_FILTER:
+        df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2)
+    if DROP_PREV_ANGLE_45:
+        # the hit/miss of 45-degree trials was recorded at random (data collection bug), so the
+        # trial after them has no reliable outcome history. Done before the angles are centered.
+        df = df[df['angle_n-1'] != 45].copy()
+
     df['action_n-1'] = df['action_n-1'] * 2 - 1
     df['success_n-1'] = df['hit_n-1'] * df['action_n-1']
     df['failure_n-1'] = (1 - df['hit_n-1']) * df['action_n-1']
@@ -272,12 +380,26 @@ if __name__ == "__main__":
     df['angle_n-1'] = df['angle_n-1'] - 45
     # -----------------------------------------
 
+    # Guard: the two input tables (steps 1 and 2) must have been made with the same preprocessing
+    # as this run, otherwise the merged outputs mix two datasets. This only warns, it does not stop.
+    # The warning is printed now and again at the end, so it is not lost in the long output.
+    problems = check_input_consistency(df, {
+        "apply_training_filter": APPLY_TRAINING_FILTER, "drop_prev_angle_45": DROP_PREV_ANGLE_45,
+    })
+    print_consistency_warning(problems)
+
     side_df = run(df, mode=MODE)
-    side_df.to_csv("side_bias_per_fit.csv", index=False)
+    out_csv = HERE / "side_bias_per_fit.csv"
+    side_df.to_csv(out_csv, index=False)
+    print(f"Saved {out_csv} ({len(side_df)} rows)")
     merged = merge_with_summary(side_df)
-    #
-    # # If you have the hit_n-1 test summary CSV, load it and pass it in:
     hit_df = pd.read_csv(HIT_TEST_CSV)
     summarize_and_plot(merged, hit_test_df=hit_df)
-    summarize_and_plot(merged)
-    pass
+
+    write_run_metadata(HERE / "side_bias_metadata.json", df, {
+        "apply_training_filter": APPLY_TRAINING_FILTER, "drop_prev_angle_45": DROP_PREV_ANGLE_45,
+        "mode": MODE, "min_trials": MIN_TRIALS, "ridge_c": RIDGE_C,
+        "delta_bic_threshold": DELTA_BIC_THRESHOLD,
+        "input_tables_consistent": not problems, "input_table_warnings": problems,
+    })
+    print_consistency_warning(problems)
