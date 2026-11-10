@@ -48,20 +48,18 @@ A still excludes rat 11 tactile to stay consistent with §4's own convention.
 Expected input directory structure
 ----------------------------------
     <PROJECT_ROOT>/
-        glm_plots_final/
+        glm_results_thesis_filtered_per_modality/
             glm_bootstrap_draws.parquet     (§4 bootstrap, long format)
             glm_summary_long.csv            (§4 MLE point estimates)
-        thesis_fits/
-            glmm_I/
-                glmm_I_primary/
-                    per_rat_coords.csv      (GLMM I shrunk per-rat coords)
-                    fixed_effects.csv       (GLMM I population fixed effects)
-                    contrasts.csv           (GLMM I S_beta, D_beta contrasts)
+        GLMM_ANALYSIS/outputs/01_glmm_I/legacy_ref-visuotactile/primary/
+            per_rat_coords.csv              (GLMM I shrunk per-rat coords)
+            fixed_effects.csv               (GLMM I population fixed effects)
+            contrasts.csv                   (GLMM I S_beta, D_beta contrasts)
 
-Output goes to <PROJECT_ROOT>/thesis_fits/glmm_I/shrinkage_plots/
+Output goes to <PROJECT_ROOT>/GLMM_ANALYSIS/outputs/02_glmm_I_validation/shrinkage_plots/
 
-Porting to another machine: edit PROJECT_ROOT only. The relative subpath
-constants below assume the same layout the analysis pipeline produces.
+PROJECT_ROOT is derived from the location of this script. The relative subpath
+constants below assume the layout the analysis pipeline produces.
 """
 
 from __future__ import annotations
@@ -77,12 +75,15 @@ import matplotlib.pyplot as plt
 # CONFIGURATION - edit PROJECT_ROOT only when moving to a new machine
 # =========================================================================
 
-PROJECT_ROOT = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+PROJECT_ROOT = Path(__file__).resolve().parents[3]   # history_dependecy/ (script lives in GLMM_ANALYSIS/scripts/02_glmm_I_validation/)
 
 # Fixed relative structure (change only if the analysis outputs move)
-GLM_SUBDIR       = Path("glm_plots_final")
-GLMM_I_SUBDIR    = Path("thesis_fits") / "glmm_I" / "glmm_I_primary"
-OUTPUT_SUBDIR    = Path("thesis_fits") / "glmm_I" / "shrinkage_plots"
+GLM_SUBDIR       = Path("glm_results_thesis_filtered_per_modality")   # §4: one GLM per rat x modality, training-filtered
+# Legacy GLMM I fit (visuotactile reference). In GLMM I history is pooled across modality, so its
+# history and random effects do not depend on the modality reference: it is equivalent to a
+# tactile-reference fit. After a refit, point this to "primary_ref-tactile".
+GLMM_I_SUBDIR    = Path("GLMM_ANALYSIS") / "outputs" / "01_glmm_I" / "legacy_ref-visuotactile" / "primary"
+OUTPUT_SUBDIR    = Path("GLMM_ANALYSIS") / "outputs" / "02_glmm_I_validation" / "shrinkage_plots"
 
 # Rat x modality cell to exclude in Version A. Rat 11 tactile is the §4
 # pse_on_scale failure. Match the rat_id string as it appears in the parquet.

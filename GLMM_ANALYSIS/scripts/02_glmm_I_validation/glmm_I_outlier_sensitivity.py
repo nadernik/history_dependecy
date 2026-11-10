@@ -1,4 +1,4 @@
-"""outlier_sensitivity_glmm_I.py
+"""glmm_I_outlier_sensitivity.py
 
 Sensitivity of the GLMM I random-effect covariance structure to omission
 of individual rats.
@@ -23,10 +23,11 @@ plus the parametric ρ_sf estimated from the fitted covariance matrix.
 
 Inputs
 ------
-    --pkl  Path to glmm_I_full.pkl produced by fit_glmm_I.py
+    --pkl  Path to glmm_I_full.pkl produced by 01_glmm_I/GLMM_I.py
+           (e.g. outputs/01_glmm_I/legacy_ref-visuotactile/glmm_I_full.pkl)
     --subset / --C  passed through to common.load_subset (defaults: pooled, unpenalized)
 
-Outputs (into ./outputs/<subset>/ next to this file, or --out-dir)
+Outputs (into GLMM_ANALYSIS/outputs/02_glmm_I_validation/outlier_sensitivity/<subset>/, or --out-dir)
 ------
     outlier_sensitivity_<subset>.csv  long-format table (source, quantity, rat_dropped, value, Δ)
     outlier_sensitivity_<subset>.txt  formatted report
@@ -34,6 +35,7 @@ Outputs (into ./outputs/<subset>/ next to this file, or --out-dir)
 from __future__ import annotations
 
 import argparse
+import sys
 import pickle
 from pathlib import Path
 
@@ -41,9 +43,14 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-# Reuse the Section 4 loaders — same column conventions, same subset filter
-from common_plot_features import Q_BF, Q_BS
-from Portable_path_resolution_for_Section_4_GLM_figures import glm_summary_path
+# Section 4 quantity names and the pooled, training-filtered Section 4 GLM summary
+PROJECT_ROOT = Path(__file__).resolve().parents[3]   # history_dependecy/
+Q_BS = "beta_success_n-1"
+Q_BF = "beta_failure_n-1"
+
+
+def glm_summary_path() -> Path:
+    return PROJECT_ROOT / "thesis_codes" / "section_4_GLM" / "glm_results_thesis_filtered" / "glm_summary_long.csv"
 
 
 # ============================================================
@@ -281,6 +288,10 @@ def format_report(summary: pd.DataFrame,
 # CLI
 # ============================================================
 def main() -> int:
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")   # Windows consoles (cp1252) cannot print beta, rho, tau
+    except Exception:
+        pass
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pkl", type=Path, required=True,
                         help="Path to glmm_I_full.pkl")
@@ -289,11 +300,12 @@ def main() -> int:
     parser.add_argument("--C", default="unpenalized",
                         help="Section 4 regularisation label (default: unpenalized)")
     parser.add_argument("--out-dir", type=Path, default=None,
-                        help="Output directory (default: ./outputs/<subset>/ next to this file)")
+                        help="Output directory (default: GLMM_ANALYSIS/outputs/02_glmm_I_validation/outlier_sensitivity/<subset>/)")
     args = parser.parse_args()
 
     out_dir = args.out_dir or (
-        Path(__file__).resolve().parent / "outputs" / args.subset
+        Path(__file__).resolve().parents[2] / "outputs" / "02_glmm_I_validation"
+        / "outlier_sensitivity" / args.subset
     )
     out_dir.mkdir(parents=True, exist_ok=True)
 

@@ -46,7 +46,7 @@ Coding
     angle_c      = angle - 45
     angle_prev_c = angle_prev - 45
     modality:    factor with levels {tactile, visual, visuotactile},
-                 reference = visuotactile (treatment contrasts)
+                 reference = tactile (treatment contrasts; same as §4 and GLMM II)
 
 Preprocessing
 -------------
@@ -55,7 +55,8 @@ Preprocessing
     - Drop first-of-session trials (n-1 undefined).
     - No session-mean centering (matches §4).
 
-Outputs (all written to OUT_DIR/glmm_I_primary/ or /glmm_I_fallback/)
+Outputs (written to OUT_DIR/primary_ref-<reference>/ or fallback_ref-<reference>/,
+e.g. outputs/01_glmm_I/primary_ref-tactile/)
 ---------------------------------------------------------------------
     fixed_effects.csv        term, estimate, SE, z, p
     fixed_vcov.csv           full fixed-effect covariance matrix
@@ -86,20 +87,21 @@ default. Wald SEs from VarCorr are unreliable but reported anyway with a caveat.
 import os
 
 # --- Paths ---
+from pathlib import Path
 R_HOME       = r'C:\Program Files\R\R-4.4.1'
 R_BIN        = r'C:\Program Files\R\R-4.4.1\bin'
 R_LIBS_USER  = r'C:\Users\alech\AppData\Local\R\win-library\4.4'
 RSCRIPT_EXE  = r'C:\Program Files\R\R-4.4.1\bin\Rscript.exe'
-CODE_ROOT    = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy'
+CODE_ROOT    = str(Path(__file__).resolve().parents[3])   # project root (functions_Ale.py, serial_dependence_analysis.py)
 
 # --- Output ---
-OUT_DIR      = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_fits\glmm_I'
+OUT_DIR      = str(Path(__file__).resolve().parents[2] / 'outputs' / '01_glmm_I')   # GLMM_ANALYSIS/outputs/01_glmm_I
 
 # --- Data / preprocessing ---
 HISTORY_DEPTH        = 1
 CRITERION_THRESHOLD  = 0.80              # 80% correct on easy angles
 CRITERION_MIN_CONSEC = 2                 # consecutive sessions passing
-MODALITY_REFERENCE   = 'visuotactile'    # treatment contrast reference
+MODALITY_REFERENCE   = 'tactile'         # treatment contrast reference
 
 # --- Column names in the input data ---
 RAT_COL       = 'rat'
@@ -807,7 +809,7 @@ if __name__ == '__main__':
     df_r.to_csv(Path(OUT_DIR) / 'input_used.csv', index=False)
 
     # ---- Primary fit ----
-    primary_dir = Path(OUT_DIR) / 'glmm_I_primary'
+    primary_dir = Path(OUT_DIR) / f'primary_ref-{MODALITY_REFERENCE}'
     ok_launch_primary = fit_one(df_r, FORMULA_PRIMARY, primary_dir, label='primary')
 
     primary_result = load_result(primary_dir, label='primary')
@@ -827,7 +829,7 @@ if __name__ == '__main__':
 
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Launching FALLBACK fit "
               f"(independent success/failure random slopes)...")
-        fallback_dir = Path(OUT_DIR) / 'glmm_I_fallback'
+        fallback_dir = Path(OUT_DIR) / f'fallback_ref-{MODALITY_REFERENCE}'
         ok_launch_fallback = fit_one(df_r, FORMULA_FALLBACK, fallback_dir, label='fallback')
         fallback_result = load_result(fallback_dir, label='fallback')
         fallback_ok, fallback_reasons = assess_fit(fallback_dir) if ok_launch_fallback else (False, ['R subprocess failed'])

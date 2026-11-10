@@ -1,0 +1,109 @@
+Outlier sensitivity analysis — GLMM I random-effect covariance
+================================================================
+GLMM fit:     GLMM_ANALYSIS\outputs\01_glmm_I\legacy_ref-visuotactile\glmm_I_full.pkl
+Section 4:    subset=pooled, C=unpenalized
+N rats:       12
+
+1. Headline correlations and variance anisotropy across estimators
+------------------------------------------------------------------
+           source     quantity  value
+     section4_raw    pearson_r -0.558
+     section4_raw spearman_rho -0.287
+     section4_raw sd_ratio_D_S +1.789
+section4_weighted    pearson_r -0.618
+        glmm_blup    pearson_r -0.867
+        glmm_blup spearman_rho -0.720
+  glmm_parametric       cor_SF -0.845
+  glmm_parametric        tau_S +0.224
+  glmm_parametric        tau_F +0.121
+  glmm_parametric   tau_S_beta +0.138
+  glmm_parametric   tau_D_beta +0.332
+  glmm_parametric tau_D_over_S +2.412
+
+2a. LOO — Section 4 raw Pearson(β_s, β_f)   (headline in P1)
+------------------------------------------------------------
+  drop rat none: r = -0.558   (Δ = +0.000)
+  drop rat    2: r = -0.609   (Δ = -0.051)
+  drop rat    3: r = -0.575   (Δ = -0.018)
+  drop rat    4: r = -0.562   (Δ = -0.004)
+  drop rat    5: r = -0.568   (Δ = -0.010)
+  drop rat    6: r = -0.566   (Δ = -0.008)
+  drop rat    7: r = -0.546   (Δ = +0.012)
+  drop rat    9: r = -0.667   (Δ = -0.109)   <-- driver (|Δ| > 0.10)
+  drop rat   10: r = -0.550   (Δ = +0.008)
+  drop rat   11: r = -0.138   (Δ = +0.420)   <-- driver (|Δ| > 0.10)
+  drop rat   12: r = -0.606   (Δ = -0.048)
+  drop rat   13: r = -0.566   (Δ = -0.008)
+  drop rat   16: r = -0.575   (Δ = -0.017)
+
+2b. LOO — Section 4 raw Spearman(β_s, β_f)  (rank version, less outlier-sensitive)
+----------------------------------------------------------------------------------
+  drop rat none: r = -0.287   (Δ = +0.000)
+  drop rat    2: r = -0.355   (Δ = -0.068)
+  drop rat    3: r = -0.291   (Δ = -0.004)
+  drop rat    4: r = -0.355   (Δ = -0.068)
+  drop rat    5: r = -0.355   (Δ = -0.068)
+  drop rat    6: r = -0.364   (Δ = -0.077)
+  drop rat    7: r = -0.291   (Δ = -0.004)
+  drop rat    9: r = -0.373   (Δ = -0.086)
+  drop rat   10: r = -0.309   (Δ = -0.022)
+  drop rat   11: r = -0.073   (Δ = +0.214)   <-- driver (|Δ| > 0.10)
+  drop rat   12: r = -0.355   (Δ = -0.068)
+  drop rat   13: r = -0.145   (Δ = +0.141)   <-- driver (|Δ| > 0.10)
+  drop rat   16: r = -0.136   (Δ = +0.150)   <-- driver (|Δ| > 0.10)
+
+3a. LOO — GLMM BLUP Pearson(b_S, b_F)       (empirical on shrunk deviations)
+----------------------------------------------------------------------------
+  drop rat none: r = -0.867   (Δ = +0.000)
+  drop rat    2: r = -0.915   (Δ = -0.048)
+  drop rat    3: r = -0.876   (Δ = -0.009)
+  drop rat    4: r = -0.866   (Δ = +0.001)
+  drop rat    5: r = -0.870   (Δ = -0.003)
+  drop rat    6: r = -0.869   (Δ = -0.002)
+  drop rat    7: r = -0.864   (Δ = +0.003)
+  drop rat    9: r = -0.907   (Δ = -0.040)
+  drop rat   10: r = -0.864   (Δ = +0.003)
+  drop rat   11: r = -0.622   (Δ = +0.245)   <-- driver (|Δ| > 0.10)
+  drop rat   12: r = -0.863   (Δ = +0.004)
+  drop rat   13: r = -0.876   (Δ = -0.009)
+  drop rat   16: r = -0.867   (Δ = -0.000)
+
+3b. LOO — GLMM BLUP Spearman(b_S, b_F)
+--------------------------------------
+  drop rat none: r = -0.720   (Δ = +0.000)
+  drop rat    2: r = -0.836   (Δ = -0.116)   <-- driver (|Δ| > 0.10)
+  drop rat    3: r = -0.773   (Δ = -0.052)
+  drop rat    4: r = -0.718   (Δ = +0.002)
+  drop rat    5: r = -0.636   (Δ = +0.084)
+  drop rat    6: r = -0.673   (Δ = +0.048)
+  drop rat    7: r = -0.782   (Δ = -0.062)
+  drop rat    9: r = -0.755   (Δ = -0.034)
+  drop rat   10: r = -0.755   (Δ = -0.034)
+  drop rat   11: r = -0.636   (Δ = +0.084)
+  drop rat   12: r = -0.736   (Δ = -0.016)
+  drop rat   13: r = -0.645   (Δ = +0.075)
+  drop rat   16: r = -0.645   (Δ = +0.075)
+
+4.  LOO — Section 4 SD(D) / SD(S) ratio     (variance anisotropy in raw data)
+-----------------------------------------------------------------------------
+  drop rat none: sd_ratio = +1.789   (Δ = +0.000)
+  drop rat    2: sd_ratio = +1.947   (Δ = +0.158)   <-- driver (|Δ| > 0.10)
+  drop rat    3: sd_ratio = +1.831   (Δ = +0.042)
+  drop rat    4: sd_ratio = +1.789   (Δ = -0.000)
+  drop rat    5: sd_ratio = +1.818   (Δ = +0.029)
+  drop rat    6: sd_ratio = +1.817   (Δ = +0.028)
+  drop rat    7: sd_ratio = +1.736   (Δ = -0.053)
+  drop rat    9: sd_ratio = +1.935   (Δ = +0.146)   <-- driver (|Δ| > 0.10)
+  drop rat   10: sd_ratio = +1.775   (Δ = -0.014)
+  drop rat   11: sd_ratio = +1.145   (Δ = -0.643)   <-- driver (|Δ| > 0.10)
+  drop rat   12: sd_ratio = +1.942   (Δ = +0.154)   <-- driver (|Δ| > 0.10)
+  drop rat   13: sd_ratio = +1.768   (Δ = -0.021)
+  drop rat   16: sd_ratio = +1.861   (Δ = +0.073)
+
+Interpretation
+--------------
+Any rat whose omission changes the reported quantity by more than 0.10
+(the '<-- driver' marker) is meaningfully driving that estimate. Count
+the drivers across the five blocks to judge which of the population-
+level claims about the between-rat covariance structure are supported
+by the broad cohort vs by one or two individuals.

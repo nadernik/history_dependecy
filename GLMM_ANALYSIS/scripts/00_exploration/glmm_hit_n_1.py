@@ -15,6 +15,10 @@
 #     + β_hit:V·[V]     + β_hit:VT·[VT]      (× hit_n1_c)
 #     + (1 + success_n1_c + failure_n1_c || rat)
 #
+# Question: population level (one answer for the cohort, rats as a random
+# sample), not per rat. The per-rat version of the modality question is the
+# §4 GLM (thesis_codes/section_4_GLM).
+#
 # Modality treatment-coded, tactile (mod=1) as reference.
 # Random effects uncorrelated (||).
 # hit_n1 enters only as fixed at this stage; add (0+hit_n1_c|rat)
@@ -36,7 +40,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import chi2, norm, shapiro
 
-sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+sys.path.append(str(Path(__file__).resolve().parents[3]))   # project root
 from functions_Ale import filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 
@@ -78,7 +82,7 @@ USE_DHARMA = False
 # ------------------------------------------------------------
 
 OUTPUT_DIR = (
-    r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\glmm_population'
+    str(Path(__file__).resolve().parents[2] / 'outputs' / '00_exploration' / 'glmm_population')
     + ('_centered' if SESSION_CENTER_HISTORY else '_uncentered')
     + f'_{ANGLE_REPRESENTATION}'
 )

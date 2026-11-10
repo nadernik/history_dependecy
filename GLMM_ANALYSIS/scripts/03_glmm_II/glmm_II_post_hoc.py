@@ -14,9 +14,12 @@ This script loads the saved model.rds and re-runs the three post-hoc
 extractions with corrected term-name resolution that handles both orderings.
 No refit — takes seconds.
 
-Also fixes the main script's bug for future runs by regenerating a patched
-copy at GLMM_II_DIR/glmm_II_fixed_reference.txt with instructions on what
-lines to change if you ever want to re-fit.
+NOTE: GLMM_II.py has since been fixed (it now resolves interaction names in
+both orderings with int_name()), so a new fit made with GLMM_II.py no longer
+needs this script. It stays useful for repairing the older fit in
+outputs/03_glmm_II/legacy_ref-visuotactile (made with visuotactile as
+reference, which is what MODALITY_REFERENCE is set to here). It does not write the
+glmm_II_fixed_reference.txt file that an earlier version of this header promised.
 
 Usage: just run this script. Paths are hardcoded to match the main GLMM II
 config; edit the CONFIG block below if your paths differ.
@@ -37,8 +40,12 @@ R_LIBS_USER  = r'C:\Users\alech\AppData\Local\R\win-library\4.4'
 RSCRIPT_EXE  = r'C:\Program Files\R\R-4.4.1\bin\Rscript.exe'
 
 # Directory containing model.rds and the broken CSVs
-GLMM_II_DIR = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_fits\glmm_II\glmm_II_primary'
+# This script repairs the LEGACY fit (made before GLMM_II.py was fixed and moved to tactile
+# as reference). A fit made with the current GLMM_II.py does not need it.
+GLMM_II_DIR = str(Path(__file__).resolve().parents[2] / 'outputs' / '03_glmm_II' / 'legacy_ref-visuotactile' / 'primary')
 
+# Must be the reference of the fit stored in GLMM_II_DIR/model.rds. The legacy fit was made
+# with 'visuotactile'; for a fit made with the current GLMM_II.py use 'tactile'.
 MODALITY_REFERENCE = 'visuotactile'
 
 os.environ['R_HOME']      = R_HOME
@@ -64,6 +71,11 @@ model <- readRDS(file.path(model_dir, "model.rds"))
 fe <- fixef(model)
 vc_fixed <- as.matrix(vcov(model))
 cat("  Loaded. n_fixed = ", length(fe), "\n", sep="")
+# guard: the reference level has no modality<ref> coefficient; if it does, the reference is wrong
+if (paste0("modality", mod_reference) %in% names(fe)) {
+  stop(paste0("MODALITY_REFERENCE '", mod_reference, "' is not the reference of this model ",
+              "(found coefficient modality", mod_reference, "). Set it to the reference used in the fit."))
+}
 cat("  Fixed-effect names:\n")
 for (nm in names(fe)) cat("    ", nm, "\n", sep="")
 

@@ -114,17 +114,11 @@ Question: do the history effects change over the course of learning?
   learning_glm_dynamic_MOD.py  Same, split by modality, merging consecutive
                                sessions to reach a minimum trial count.
 
-03_modality_modulation
+03_modality_modulation  (moved)
 ----------------------
-Question: does the modality of the current trial change the history effects,
-at the level of the whole cohort?
-  glmm/             Trial-level mixed models. glmm_hit_n_1.py is the first
-                    version (tactile as reference), GLMM_2.py is GLMM II
-                    (visuotactile as reference, adds the reward term, Wald
-                    tests). post_hoc_GLMM2.py repairs three output files of
-                    GLMM_2.py from the saved model, without refitting.
-  shrinkage_check/  glmm_1_blups_comparison.py: do per-rat GLM estimates
-                    agree with the GLMM I shrunk estimates?
+The GLMM scripts that were here (GLMM II, its post-hoc repair, glmm_hit_n_1.py
+and the GLMM I shrinkage check) now live in ../GLMM_ANALYSIS, together with
+GLMM I. See ../GLMM_ANALYSIS/README.txt for the order of the analysis.
 
 04_acuity_transitions
 ---------------------
@@ -166,6 +160,6 @@ this folder add the root to the import path.
 
 Notes
 -----
-- Fit results of the mixed models are written outside this folder, to
-  history_dependecy/fits and history_dependecy/thesis_fits.
+- Fit results of the GLMMs are in history_dependecy/GLMM_ANALYSIS/outputs; the
+  other mixed models write to history_dependecy/fits.
 - Most CSV files are gitignored: this README is the only record of what they are.

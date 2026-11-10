@@ -8,8 +8,12 @@ history effects? I.e., does the population center in the (beta_S, beta_F)
 plane move between tactile, visual, and visuotactile?
 
 This is the population-scale version of the within-rat modality contrasts
-from the §4 post-hoc: those showed whether individual rats shift; GLMM II
-shows whether there is a shared direction of shift across the cohort.
+from the §4 post-hoc (section_4_GLM_interaction_pooled_modality.py):
+  - §4 fits one GLM per rat and asks, for each rat separately, whether that
+    rat's history effects shift with modality (12 separate answers).
+  - GLMM II asks whether there is a SHARED direction of shift across the
+    cohort (ONE answer, with rats as a random sample from the population).
+The two questions are related but not interchangeable.
 
 Design decisions (settled)
 --------------------------
@@ -20,8 +24,14 @@ Design decisions (settled)
   the whole S/D geometric machinery.
 - No random slopes on the history x modality interactions (12 rats cannot
   support 6 additional random slopes).
-- Modality reference: visuotactile (continuity with GLMM I, matches "VT vs
-  unimodal" narrative).
+- Modality reference: tactile (matches the §4 modality-interaction GLMs, so
+  the coefficients and contrasts can be compared directly with §4).
+  NOTE: GLMM I (01_glmm_I/GLMM_I.py) now also uses tactile as reference (its saved
+  fit was made with visuotactile, equivalent because GLMM I pools history). The fit saved in
+  outputs/03_glmm_II/legacy_ref-visuotactile/ was run with visuotactile as reference (terms named
+  modalitytactile, modalityvisual); it must be refitted (about 6 h) to get
+  tactile-reference output, and glmm_II_post_hoc.py must only be run on a fit
+  made with the same reference.
 - Omnibus tests: 2-df Wald from the fixed-effect covariance matrix. LRTs
   would require 4 additional ~10h refits; with N=588k, Wald and LRT agree
   to within Monte Carlo error.
@@ -58,16 +68,18 @@ Coding (identical to GLMM I)
     failure_prev = (1 - hit_prev) * action_prev   (in {-1, 0, +1})
     angle_c      = angle - 45
     angle_prev_c = angle_prev - 45
-    modality: factor {tactile, visual, visuotactile}, reference=visuotactile
+    modality: factor {tactile, visual, visuotactile}, reference=tactile
 
 Preprocessing (identical to GLMM I)
 -----------------------------------
-    - SerialDependenceAnalyzer.
+    - SerialDependenceAnalyzer (fold=False).
+    - Keep only trials with angle and angle_n-1 in [0, 90].
     - 80% training-criterion filter.
     - Drop first-of-session trials.
     - No session-mean centering.
 
-Outputs (written to OUT_DIR/glmm_II_primary/ or /glmm_II_fallback/)
+Outputs (written to OUT_DIR/primary_ref-<reference>/ or fallback_ref-<reference>/,
+e.g. outputs/03_glmm_II/primary_ref-tactile/)
 -------------------------------------------------------------------
 Standard (parallel to GLMM I):
     fixed_effects.csv                 term, estimate, SE, z, p (18 terms)
@@ -75,9 +87,12 @@ Standard (parallel to GLMM I):
     ranef_variances.csv               variances + covariance from VarCorr
     blups_rat.csv, blups_rat_date.csv per-rat / per-session BLUPs
     predictions.csv                   per-trial fitted probabilities
-    contrasts.csv                     pooled-across-modality S_beta, D_beta
+    contrasts.csv                     S_beta, D_beta AT THE REFERENCE MODALITY
+                                      (not pooled across modalities; rows are
+                                      named S_beta_at_<reference>, D_beta_at_<reference>)
     heterogeneity.csv                 tau_S, tau_F, tau_SF, tau_S_beta, tau_D_beta
-    per_rat_coords.csv                pooled per-rat coords (matches GLMM I schema)
+    per_rat_coords.csv                per-rat coords at the REFERENCE MODALITY
+                                      (same columns as GLMM I, but not pooled)
     modality_baselines.csv            baseline P(vertical) at angle=0 per modality
     meta.txt, formula.txt, session_info.txt
 
@@ -100,20 +115,21 @@ Python-side:
 import os
 
 # --- Paths ---
+from pathlib import Path
 R_HOME       = r'C:\Program Files\R\R-4.4.1'
 R_BIN        = r'C:\Program Files\R\R-4.4.1\bin'
 R_LIBS_USER  = r'C:\Users\alech\AppData\Local\R\win-library\4.4'
 RSCRIPT_EXE  = r'C:\Program Files\R\R-4.4.1\bin\Rscript.exe'
-CODE_ROOT    = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy'
+CODE_ROOT    = str(Path(__file__).resolve().parents[3])   # project root (functions_Ale.py, serial_dependence_analysis.py)
 
 # --- Output ---
-OUT_DIR      = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_fits\glmm_II'
+OUT_DIR      = str(Path(__file__).resolve().parents[2] / 'outputs' / '03_glmm_II')   # GLMM_ANALYSIS/outputs/03_glmm_II
 
 # --- Data / preprocessing (identical to GLMM I) ---
 HISTORY_DEPTH        = 1
 CRITERION_THRESHOLD  = 0.80
 CRITERION_MIN_CONSEC = 2
-MODALITY_REFERENCE   = 'visuotactile'
+MODALITY_REFERENCE   = 'tactile'   # must match glmm_II_post_hoc.py and the fit that is post-processed
 
 # --- Column names in the input data ---
 RAT_COL       = 'rat'
@@ -385,6 +401,19 @@ wald_test <- function(fe, V, terms) {
   list(chisq = W, df = length(terms), p = p, error = NA)
 }
 
+# Resolve the name of the history x modality interaction coefficient.
+# R's formula parser orders the two parts of an interaction differently
+# depending on the term (e.g. "angle_c:modalitytactile" but
+# "modalitytactile:success_prev"), so both orderings are tried.
+# If neither exists, the default name is returned (linear_contrast then
+# reports it as missing instead of silently using a wrong term).
+int_name <- function(fe_names, base_term, m) {
+  cands <- c(paste0(base_term, ":modality", m),
+             paste0("modality", m, ":", base_term))
+  found <- intersect(cands, fe_names)
+  if (length(found) > 0) found[1] else cands[1]
+}
+
 # ============================================================
 # STANDARD EXTRACTION (parallel to GLMM I)
 # ============================================================
@@ -435,10 +464,10 @@ preds_df <- data.frame(
 )
 write.csv(preds_df, file.path(out_dir, "predictions.csv"), row.names = FALSE)
 
-# ---- pooled S_beta / D_beta contrasts (baseline VT-only) ----
-# NOTE: in GLMM II these are the effects AT THE REFERENCE MODALITY (visuotactile),
+# ---- pooled S_beta / D_beta contrasts (baseline at the reference modality) ----
+# NOTE: in GLMM II these are the effects AT THE REFERENCE MODALITY (mod_reference),
 # because the main effects success_prev and failure_prev in the fixed part now
-# represent VT-only, not pooled across modalities. To get pooled-across-modality
+# represent the reference modality only, not pooled across modalities. To get pooled-across-modality
 # estimates comparable to GLMM I, see modality_specific_effects.csv averaged.
 fe <- fixef(model)
 b_S <- fe["success_prev"]
@@ -450,7 +479,7 @@ D_beta_VT_res <- linear_contrast(fe, vc_fixed,
                                   setNames(c(1, -1), c("success_prev", "failure_prev")))
 
 contrasts_df <- data.frame(
-  contrast   = c("S_beta_at_VT", "D_beta_at_VT"),
+  contrast   = paste0(c("S_beta_at_", "D_beta_at_"), mod_reference),
   estimate   = c(S_beta_VT_res$estimate, D_beta_VT_res$estimate),
   se         = c(S_beta_VT_res$se,       D_beta_VT_res$se),
   ci_low     = c(S_beta_VT_res$ci_low,   D_beta_VT_res$ci_low),
@@ -522,8 +551,9 @@ history_vars <- c("success_prev", "failure_prev", "reward_prev", "angle_prev_c")
 omnibus_rows <- list()
 for (h in history_vars) {
   # Find all interaction terms h:modalityXXX in the fixed effects
-  pattern <- paste0("^", h, ":modality")
-  interact_terms <- names(fe)[grepl(pattern, names(fe))]
+  # either ordering: h:modalityXXX or modalityXXX:h
+  interact_terms <- names(fe)[grepl(paste0("^", h, ":modality"), names(fe)) |
+                              grepl(paste0("^modality[^:]+:", h, "$"), names(fe))]
   if (length(interact_terms) == 0) next
   res <- wald_test(fe, vc_fixed, interact_terms)
   omnibus_rows[[length(omnibus_rows) + 1]] <- data.frame(
@@ -565,7 +595,7 @@ weights_for <- function(base_term, m, mod_reference) {
     names(w) <- base_term
   } else {
     w <- c(1, 1)
-    names(w) <- c(base_term, paste0(base_term, ":modality", m))
+    names(w) <- c(base_term, int_name(names(fe), base_term, m))
   }
   w
 }
@@ -592,12 +622,12 @@ for (m in mod_levels_all) {
   } else {
     w_S <- setNames(c(1, 1, 1, 1),
                     c("success_prev", "failure_prev",
-                      paste0("success_prev:modality", m),
-                      paste0("failure_prev:modality", m)))
+                      int_name(names(fe), "success_prev", m),
+                      int_name(names(fe), "failure_prev", m)))
     w_D <- setNames(c(1, -1, 1, -1),
                     c("success_prev", "failure_prev",
-                      paste0("success_prev:modality", m),
-                      paste0("failure_prev:modality", m)))
+                      int_name(names(fe), "success_prev", m),
+                      int_name(names(fe), "failure_prev", m)))
   }
   res_S <- linear_contrast(fe, vc_fixed, w_S)
   res_D <- linear_contrast(fe, vc_fixed, w_D)
@@ -632,11 +662,11 @@ pairs <- combn(mod_levels_all, 2, simplify = FALSE)
 diff_weights_single <- function(base_term, m1, m2, mod_reference) {
   weights <- c()
   if (m1 != mod_reference) {
-    k <- paste0(base_term, ":modality", m1)
+    k <- int_name(names(fe), base_term, m1)
     weights[k] <- 1
   }
   if (m2 != mod_reference) {
-    k <- paste0(base_term, ":modality", m2)
+    k <- int_name(names(fe), base_term, m2)
     weights[k] <- -1
   }
   weights
@@ -666,12 +696,12 @@ for (pair in pairs) {
     fail_sign <- if (deriv_name == "S") 1 else -1
     weights <- c()
     if (m1 != mod_reference) {
-      weights[paste0("success_prev:modality", m1)] <- succ_sign
-      weights[paste0("failure_prev:modality", m1)] <- fail_sign
+      weights[int_name(names(fe), "success_prev", m1)] <- succ_sign
+      weights[int_name(names(fe), "failure_prev", m1)] <- fail_sign
     }
     if (m2 != mod_reference) {
-      weights[paste0("success_prev:modality", m2)] <- -succ_sign
-      weights[paste0("failure_prev:modality", m2)] <- -fail_sign
+      weights[int_name(names(fe), "success_prev", m2)] <- -succ_sign
+      weights[int_name(names(fe), "failure_prev", m2)] <- -fail_sign
     }
     if (length(weights) == 0) next
     res <- linear_contrast(fe, vc_fixed, weights)
@@ -691,7 +721,7 @@ write.csv(pair_df, file.path(out_dir, "modality_pairwise_contrasts.csv"),
 # NEW: PER-RAT PER-MODALITY COORDS
 # ============================================================
 
-# beta_S at rat r, modality m = beta_S_pop + beta_S:m (0 if VT) + b_{S,r}
+# beta_S at rat r, modality m = beta_S_pop + beta_S:m (0 if m is the reference) + b_{S,r}
 # same for beta_F
 rat_blups <- as.data.frame(ranef(model)$rat)
 rat_blups$rat_id <- rownames(rat_blups); rownames(rat_blups) <- NULL
@@ -706,8 +736,8 @@ for (m in mod_levels_all) {
   if (m == mod_reference) {
     dS_mod <- 0; dF_mod <- 0
   } else {
-    s_term <- paste0("success_prev:modality", m)
-    f_term <- paste0("failure_prev:modality", m)
+    s_term <- int_name(names(fe), "success_prev", m)
+    f_term <- int_name(names(fe), "failure_prev", m)
     dS_mod <- if (s_term %in% names(fe)) as.numeric(fe[s_term]) else 0
     dF_mod <- if (f_term %in% names(fe)) as.numeric(fe[f_term]) else 0
   }
@@ -728,7 +758,7 @@ write.csv(per_rat_mod_df, file.path(out_dir, "per_rat_per_modality_coords.csv"),
 
 # ---- pooled per-rat coords (same schema as GLMM I) ----
 # For continuity with GLMM I's per_rat_coords.csv, we report the coords
-# evaluated at the REFERENCE MODALITY (visuotactile) - which is where the
+# evaluated at the REFERENCE MODALITY (mod_reference) - which is where the
 # main effects live. To get GLMM I's "pooled" numbers, average across the
 # three modality-specific coords in per_rat_per_modality_coords.csv.
 per_rat_df <- data.frame(
@@ -993,7 +1023,7 @@ if __name__ == '__main__':
     df_r.to_csv(Path(OUT_DIR) / 'input_used.csv', index=False)
 
     # ---- Primary fit ----
-    primary_dir = Path(OUT_DIR) / 'glmm_II_primary'
+    primary_dir = Path(OUT_DIR) / f'primary_ref-{MODALITY_REFERENCE}'
     ok_launch_primary = fit_one(df_r, FORMULA_PRIMARY, primary_dir, label='primary')
 
     primary_result = load_result(primary_dir, label='primary')
@@ -1018,7 +1048,7 @@ if __name__ == '__main__':
 
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] "
               f"Launching FALLBACK fit (independent success/failure slopes)...")
-        fallback_dir = Path(OUT_DIR) / 'glmm_II_fallback'
+        fallback_dir = Path(OUT_DIR) / f'fallback_ref-{MODALITY_REFERENCE}'
         ok_launch_fallback = fit_one(df_r, FORMULA_FALLBACK, fallback_dir,
                                      label='fallback')
         fallback_result = load_result(fallback_dir, label='fallback')

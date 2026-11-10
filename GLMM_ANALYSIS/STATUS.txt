@@ -1,0 +1,75 @@
+STATUS of the GLMM reorganisation  (written 2026-11-10, branch feature/exploratory_psych_curves)
+=====================================================================================================
+
+What was done today
+-------------------
+- All GLMM scripts moved into GLMM_ANALYSIS/scripts/, in analysis order:
+    00_exploration/        glmm_hit_n_1.py
+    01_glmm_I/             GLMM_I.py                  (was thesis_codes/section_5_GLMM/GLMM_1.py)
+    02_glmm_I_validation/  glmm_I_shrinkage_check.py  (was 03_modality_modulation/shrinkage_check/glmm_1_blups_comparison.py)
+                           glmm_I_outlier_sensitivity.py  (was thesis_codes/section_4_GLM/results/old_figure_script/outlier_sensitivity_glmm_I.py)
+    03_glmm_II/            GLMM_II.py                 (was glmm/GLMM_2.py)
+                           glmm_II_post_hoc.py        (was glmm/post_hoc_GLMM2.py)
+- Old folders 03_modality_modulation/, thesis_codes/section_5_GLMM/ and thesis_fits/ removed (moved with git).
+- Old results moved to GLMM_ANALYSIS/outputs/<same step>/ ; old fits sit in legacy_ref-visuotactile/.
+- Reference modality set to TACTILE in GLMM_I.py, GLMM_II.py, glmm_II_post_hoc.py's default for new fits
+  (glmm_II_post_hoc.py itself is set to 'visuotactile' because it repairs the legacy fit). glmm_hit_n_1.py already used tactile.
+- New fit folders are named primary_ref-<reference> / fallback_ref-<reference>.
+- Hardcoded C:\dev paths replaced by paths derived from each script's location (R install path still hardcoded).
+- GLMM_II.py: fixed the interaction-name bug (int_name() tries both term orderings).
+- GLMM_ANALYSIS/README.txt written; GLM_HISTORY_ANALYSIS/README.txt points to it.
+- NOT committed. Everything is staged (git add), including the deletions of thesis_fits/.
+
+
+What we know (checked)
+----------------------
+- The int_name() fix reproduces the post-hoc repaired GLMM II tables exactly (max difference 0.0, no NaN),
+  tested by re-running the corrected R extraction code on the old model.rds.
+- glmm_I_shrinkage_check.py runs end to end on the new layout. Input: glm_results_thesis_filtered_per_modality/
+  (chosen because it has one GLM per rat x modality; the other filtered folders are pooled (thesis_codes/.../
+  glm_results_thesis_filtered) or the later joint-interaction fit (glm_results_thesis_filtered_interaction)).
+- glmm_I_outlier_sensitivity.py runs end to end (pooled, training-filtered section 4 GLM from
+  thesis_codes/section_4_GLM/glm_results_thesis_filtered; --pkl needed). Fixed a console-encoding crash.
+- GLMM_I.py, GLMM_II.py, glmm_II_post_hoc.py import fine and resolve project root, OUT_DIR, legacy fit dir and
+  model.rds to the right places (path check only, no fit run).
+- In GLMM I history is pooled across modality, so changing the reference only recodes the modality main effects
+  and modality_baselines.csv; history and random effects are the same model. This is why the shrinkage check
+  reads the legacy (visuotactile) GLMM I fit.
+- GLMM II (modality interactions) is the population-level counterpart of the section 4 per-modality/interaction
+  GLMs: section 4 gives one answer per rat, GLMM II one answer for the cohort (shared direction of shift).
+- No other tracked file refers to the old locations (repo_tree.txt and organization_folders.sh do not mention them).
+
+
+What we do not know / not done
+------------------------------
+- GLMM I and GLMM II have NOT been refitted with tactile as reference (about 11 h and 6 h). The fits on disk
+  are visuotactile-reference (legacy_ref-visuotactile/). GLMM II results with tactile reference do not exist yet.
+- The new fit-writing code (GLMM_I.py / GLMM_II.py main, primary_ref-tactile folder naming, int_name() inside a
+  full fit) has not been run in a real fit; only the extraction part was tested on the old model.
+- glmm_II_post_hoc.py and glmm_hit_n_1.py have not been run from the new location (post-hoc would rewrite the
+  repaired CSVs; hit_n_1 loads data and fits at import).
+- OVERWRITTEN: running the shrinkage check replaced the previous shrinkage_plots outputs in
+  outputs/02_glmm_I_validation/shrinkage_plots/ (files dated 2026-09-06; gitignored, no backup). They came from
+  a glm_plots_final/ folder that no longer exists, so the new numbers may differ. Not compared. Check for a
+  backup if the old figures matter.
+- Which section 4 results the old shrinkage plots used is unknown (glm_plots_final is gone). Per-modality filtered
+  was chosen; the interaction version could be an alternative (constant GLM_SUBDIR at the top of the script).
+- The script that produced outputs/02_glmm_I_validation/modality_contrasts/ (within-rat arrows and triangles)
+  is not in the repository.
+- glmm_hit_n_1.py: no outputs of it exist anywhere in the project. Its header describes only the model, not the
+  centring option, angle bases, diagnostics and LRT refits (README.txt has the fuller description).
+- fits/ (969 MB, formula1_* and formula2_* folders) was left alone; not checked whether they are GLMM outputs
+  or belong to the 04_acuity_transitions mixed models.
+- glmm_I_outlier_sensitivity.py depends on a thesis folder (thesis_codes/section_4_GLM/glm_results_thesis_filtered).
+  It breaks if that folder moves.
+- outputs/00_exploration/ is empty (git does not track empty folders).
+
+
+Suggested next steps
+--------------------
+1. Decide whether to commit now (suggested message: move GLMM scripts to GLMM_ANALYSIS, tactile reference, fix GLMM II name bug).
+2. Look for a backup of the old shrinkage plots and compare with the new ones.
+3. Decide on the refits (GLMM II first: it is the one that needs tactile reference to be comparable with section 4;
+   GLMM I is equivalent either way).
+4. Run glmm_II_post_hoc.py only if the legacy tables need regenerating; run glmm_hit_n_1.py if its outputs are wanted.
+5. Optionally expand the glmm_hit_n_1.py header and find or rewrite the modality_contrasts script.
