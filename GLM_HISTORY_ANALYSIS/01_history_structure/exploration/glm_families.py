@@ -36,8 +36,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[3]))   # project root: functions_Ale.py, serial_dependence_analysis.py
 from functions_Ale import flatten_model_results
-   
+
 from serial_dependence_analysis import SerialDependenceAnalyzer
 HISTORY_DEPTH = 1
 
