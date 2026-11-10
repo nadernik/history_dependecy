@@ -866,7 +866,7 @@ meta = {
 }
 
 # Load old BLUPs as stand-in for the new fit's BLUPs (different fit, but same rats)
-OLD_BLUPS_PATH = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\GLM_HISTORY_ANALYSIS\model_ranef.csv'
+OLD_BLUPS_PATH = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\GLM_HISTORY_ANALYSIS\04_acuity_transitions\a_continuous_strength\model_ranef.csv'
 old_blups = pd.read_csv(OLD_BLUPS_PATH)
 old_blups = old_blups.rename(columns={
     '(Intercept)': 'intercept',

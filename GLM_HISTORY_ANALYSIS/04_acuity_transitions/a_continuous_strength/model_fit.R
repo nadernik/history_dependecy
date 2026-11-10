@@ -2,7 +2,7 @@
 library(lme4, lib.loc="C:/Users/alech/AppData/Local/R/win-library/4.4")
 
 cat("Reading data...\n")
-df <- read.csv("C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/model_data.csv")
+df <- read.csv("C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/04_acuity_transitions/a_continuous_strength/model_data.csv")
 df$rat <- as.factor(df$rat)
 cat("Rows:", nrow(df), "\n")
 
@@ -18,12 +18,12 @@ model <- glmer(
 cat("Saving fixed effects...\n")
 fe <- as.data.frame(summary(model)$coefficients)
 fe$term <- rownames(fe)
-write.csv(fe, "C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/model_results.csv", row.names=FALSE)
+write.csv(fe, "C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/04_acuity_transitions/a_continuous_strength/model_results.csv", row.names=FALSE)
 
 cat("Saving random effects...\n")
 re <- as.data.frame(ranef(model)$rat)
 re$rat <- rownames(re)
-write.csv(re, "C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/model_ranef.csv", row.names=FALSE)
+write.csv(re, "C:/dev/projects/Thesis_SISSA/Rats/history_dependecy/GLM_HISTORY_ANALYSIS/04_acuity_transitions/a_continuous_strength/model_ranef.csv", row.names=FALSE)
 
 cat("AIC:", AIC(model), "\n")
 cat("Done.\n")

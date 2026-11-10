@@ -20,7 +20,7 @@ from serial_dependence_analysis import SerialDependenceAnalyzer
 HISTORY_DEPTH = 1
 RSCRIPT       = r'C:\Program Files\R\R-4.4.1\bin\Rscript.exe'
 R_LIB         = r'C:\Users\alech\AppData\Local\R\win-library\4.4'
-BASE_DIR      = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\GLM_HISTORY_ANALYSIS'
+BASE_DIR      = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\GLM_HISTORY_ANALYSIS\04_acuity_transitions\a_continuous_strength'
 CSV_PATH      = BASE_DIR + r'\model_data.csv'
 RESULTS_PATH  = BASE_DIR + r'\model_results.csv'
 RANEF_PATH    = BASE_DIR + r'\model_ranef.csv'
