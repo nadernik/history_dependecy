@@ -73,6 +73,55 @@ Order of the analysis
                     current GLMM_II.py does not need it. It stops if
                     MODALITY_REFERENCE does not match the fit.
 
+04_acuity_transitions   (does the history effect depend on how sharp the previous modality was compared with the current one?)
+  Mixed models on modality transitions (lme4 through Rscript, one step through
+  pymer4). scripts/04_acuity_transitions/<step>/ writes to
+  outputs/04_acuity_transitions/<step>/. Run from the project root. The R
+  install path (R_HOME, RSCRIPT, R_LIBS_USER) is hardcoded at the top of the
+  scripts that call R.
+  a_continuous_strength/
+                    First approach: previous-trial precision (1/sigma) as a
+                    continuous predictor. mixed_model_WP.py (pymer4) and
+                    mixed_effects_in_R.py (same model through Rscript);
+                    check_R.py is an environment helper.
+                    mixed_effects_in_R.py writes model_data.csv and
+                    model_fit.R, and the R script writes model_results.csv and
+                    model_ranef.csv (66 MB of CSV, gitignored).
+                    Output: outputs/04_acuity_transitions/a_continuous_strength/
+  b_rank_transition_fits/
+                    Second approach: modalities ranked per rat, trials labelled
+                    up / down / same. One engine run with a different formula:
+                    mixed_effects_minimal.py = Formula 1,
+                    mixed_model_WP_2.py = Formula 3 (saturated),
+                    mixed_model_WP_base_2.py = cleaned Formula 3.
+                    mixed_model_WP_2.py reads model_ranef.csv from step a.
+                    Output: outputs/04_acuity_transitions/b_rank_transition_fits/<fit>/
+                    (blups_rat.csv, fixed_effects.csv, predictions.csv, data.csv,
+                    result.pkl, fit.R, meta.txt). 969 MB, mostly gitignored; fit.R
+                    and meta.txt are tracked.
+                    The fit folders keep their original names: formula1_minimal,
+                    formula1_uncorrelated, formula1_uncorrelated_try_more_random,
+                    formula1_correlated_RECONSTRUCTED, formula2_uncorrelated,
+                    formula2_uncorrelated_try_more_random. The scripts were edited
+                    between runs and the saved versions now write to formula3_*
+                    folders, which do not exist yet: the versions that made the
+                    formula1_uncorrelated* and formula2_* folders are not saved.
+                    fit.R and meta.txt in each folder are the record of the fit.
+  c_validation_vs_per_cell/
+                    Compare the mixed-model estimates with independent per-cell
+                    GLMs:
+                      validation_against_per_cell.py    Formula 1 (fit formula1_uncorrelated_try_more_random)  -> formula1/
+                      validation_against_per_cell_2.py  Formula 2 (fit formula2_uncorrelated_try_more_random)  -> formula2/
+                      validation_against_per_cell_3.py  Formula 3 (fit formula3_uncorrelated, not fitted yet)  -> formula3/
+                    formula2_earlier_run/ is an earlier run of the Formula 2
+                    comparison; no script writes it any more.
+                    Input: per_cell_glm_results/ in the project root, written by
+                    REWARD_and_CHOICE_HISTORY_PSYCHOMETRICS/GLM_transition_mod_check.py
+                    (ordinary per-cell GLMs, 9 modality-transition cells per rat, not
+                    a mixed model).
+                    Checked 2026-11-11: the Formula 1 and Formula 2 scripts, rerun
+                    from their new location, reproduce the stored CSV files exactly.
+
 
 Outputs
 -------
@@ -87,4 +136,5 @@ outputs/03_glmm_II/legacy_ref-visuotactile/
     primary/             GLMM II fit with visuotactile as reference (modality
                          terms named modalitytactile, modalityvisual). Needs a
                          refit with GLMM_II.py to get tactile-reference results.
+outputs/04_acuity_transitions/   fits and validation results of the acuity-transition mixed models (see step 04).
 Most CSV, PNG and RDS files are gitignored.

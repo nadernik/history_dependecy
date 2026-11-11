@@ -122,30 +122,9 @@ GLMM I. See ../GLMM_ANALYSIS/README.txt for the order of the analysis.
 
 04_acuity_transitions
 ---------------------
-Question: does the history effect depend on how sharp the previous modality
-was compared with the current one (e.g. going from a sharp to a blurry
-modality)?
-  a_continuous_strength/     First approach: previous-trial precision (1/sigma)
-                             as a continuous predictor.
-                             mixed_model_WP.py (pymer4) and
-                             mixed_effects_in_R.py (same model through
-                             Rscript); check_R.py is an environment helper.
-                             mixed_effects_in_R.py writes model_data.csv and
-                             model_fit.R, and the R script writes
-                             model_results.csv and model_ranef.csv.
-  b_rank_transition_fits/    Second approach: modalities ranked per rat,
-                             trials labelled up / down / same. One engine run
-                             with a different FORMULA setting:
-                             mixed_effects_minimal.py = Formula 1,
-                             mixed_model_WP_2.py = Formula 3 (saturated),
-                             mixed_model_WP_base_2.py = cleaned Formula 3.
-                             mixed_model_WP_2.py reads model_ranef.csv from
-                             a_continuous_strength.
-  c_validation_vs_per_cell/  validation_against_per_cell.py (Formula 1),
-                             _2 (Formula 2), _3 (Formula 3): compare the
-                             mixed-model estimates with independent per-cell
-                             GLMs. They need the per_cell_glm_results folder,
-                             whose script is not in this repository folder.
+Moved to ../GLMM_ANALYSIS (scripts/04_acuity_transitions and
+outputs/04_acuity_transitions): the mixed models on modality transitions and
+their validation against per-cell GLMs. See ../GLMM_ANALYSIS/README.txt.
 
 _unsorted
 ---------
@@ -160,6 +139,5 @@ this folder add the root to the import path.
 
 Notes
 -----
-- Fit results of the GLMMs are in history_dependecy/GLMM_ANALYSIS/outputs; the
-  other mixed models write to history_dependecy/fits.
+- Fit results of all the mixed models are in history_dependecy/GLMM_ANALYSIS/outputs.
 - Most CSV files are gitignored: this README is the only record of what they are.

@@ -10,7 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
-sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+from pathlib import Path as _Path
+PROJECT_ROOT = _Path(__file__).resolve().parents[4]   # history_dependecy/ (script is in GLMM_ANALYSIS/scripts/04_acuity_transitions/<step>/)
+sys.path.append(str(PROJECT_ROOT))
+OUT04 = PROJECT_ROOT / "GLMM_ANALYSIS" / "outputs" / "04_acuity_transitions"
 from functions_Ale import flatten_model_results, filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 from pymer4.models import Lmer   # ← add here, after R env vars are set

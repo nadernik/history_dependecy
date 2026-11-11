@@ -21,13 +21,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from scipy.stats import wilcoxon
+from pathlib import Path
+PROJECT_ROOT = Path(__file__).resolve().parents[4]   # history_dependecy/ (script is in GLMM_ANALYSIS/scripts/04_acuity_transitions/<step>/)
+OUT04 = PROJECT_ROOT / "GLMM_ANALYSIS" / "outputs" / "04_acuity_transitions"
 
 
 # ─── CONFIG ───────────────────────────────────────────────────────────────────
 
-GLM_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\per_cell_glm_results"
-FIT_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\formula2_uncorrelated_try_more_random"
-OUT_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\validation_results_2.0"
+GLM_DIR = str(PROJECT_ROOT / "per_cell_glm_results")
+FIT_DIR = str(OUT04 / "b_rank_transition_fits" / "formula2_uncorrelated_try_more_random")
+OUT_DIR = str(OUT04 / "c_validation_vs_per_cell" / "formula2")
 
 TYPE_B = {11, 13, 16}
 MIN_TRIALS_PER_CELL = 50

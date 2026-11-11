@@ -1,9 +1,10 @@
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Load BLUPs (you already have them in the CSV above)
-blups = pd.read_csv(r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\formula1_uncorrelated_try_more_random\blups_rat.csv')
+blups = pd.read_csv(Path(__file__).resolve().parent / 'blups_rat.csv')
 
 # Fixed effects from the latest model
 fixed = {

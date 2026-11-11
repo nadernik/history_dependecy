@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.special import erf
 
-sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+from pathlib import Path as _Path
+PROJECT_ROOT = _Path(__file__).resolve().parents[4]   # history_dependecy/ (script is in GLMM_ANALYSIS/scripts/04_acuity_transitions/<step>/)
+sys.path.append(str(PROJECT_ROOT))
+OUT04 = PROJECT_ROOT / "GLMM_ANALYSIS" / "outputs" / "04_acuity_transitions"
 from functions_Ale import filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 
@@ -26,7 +29,7 @@ print(subprocess.run([RSCRIPT_EXE, '--version'], capture_output=True, text=True)
 # CONFIG — column names (verify they match your data)
 # ============================================================
 RAT_COL     = 'rat'
-SESSION_COL = 'date'        # ⚠️ VERIFY this column exists; adjust if named differently
+SESSION_COL = 'date'       
 MOD_COL     = 'mod'
 MOD_N1_COL  = 'mod_n-1'
 ACTION_COL  = 'action'
@@ -41,19 +44,14 @@ PSYCH_FRACTION = 1/3            # fraction of SESSIONS held out for psychometric
 
 
 # ============================================================
-# 1. LOAD AND PREPROCESS  (unchanged from original)
+# 1. LOAD AND PREPROCESS  
 # ============================================================
 an = SerialDependenceAnalyzer(history_depth=HISTORY_DEPTH, save_figures=False)
 an.load_and_preprocess_data()
 df = an.create_lagged_features()
-df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2)
+df = filter_training_trials(df, method='criterion', criterion=0.80, min_consec=2) # filter out training trials based on performance criterion (adjust as needed)
 
 print(f"Loaded {len(df)} trials, {df[RAT_COL].nunique()} rats")
-assert SESSION_COL in df.columns, (
-    f"Expected '{SESSION_COL}' column — got {df.columns.tolist()}. "
-    f"Edit SESSION_COL at the top of the script."
-)
-
 
 # ============================================================
 # 2. ★ NEW: SESSION-LEVEL SPLIT (psychometric vs model set)
@@ -84,7 +82,8 @@ def split_sessions(df, psych_fraction=1/3, seed=RANDOM_SEED):
     return df
 
 df = split_sessions(df, psych_fraction=PSYCH_FRACTION, seed=RANDOM_SEED)
-
+# this just adds a coloumn for each trial with the value 'psych' or 'model' depending on the session it belongs to. 
+# This is used later to separate the data into two sets: one for fitting psychometric functions and one for fitting the mixed model.
 
 # ============================================================
 # 3. PSYCHOMETRICS ON PSYCH SET → ACUITY RANK PER RAT
@@ -141,7 +140,11 @@ def build_acuity_ranks(psych_df):
 
 
 psych_df    = fit_psychometric_per_rat(df[df['split'] == 'psych'])
-acuity_rank = build_acuity_ranks(psych_df)
+acuity_rank = build_acuity_ranks(psych_df) # --> {
+#    rat_1: {mod_1: 3, mod_2: 1, mod_3: 2},
+#    rat_2: {mod_1: 2, mod_2: 3, mod_3: 1}
+#}, but mod_1 is just called 1 and so on for the others.
+# We have something like this for each rat, where the numbers are ranks of acuity (1=lowest, 3=highest) for each modality. 
 print("\nAcuity ranks per rat (3 = best acuity for that rat):")
 print(pd.DataFrame(acuity_rank).T)
 
@@ -150,8 +153,7 @@ print(pd.DataFrame(acuity_rank).T)
 # 4. ★ NEW: FEATURE ENGINEERING ON THE MODEL SET
 # ─────────────────────────────────────────────────────────────
 # Performed on the 2/3 sessions reserved for the mixed model.
-# Drops the first trial of each session (its n−1 lives in
-# another session). Builds:
+# Drops the first trial of each session (its n-1 is part of the warm up). Builds:
 #   success_n1 / failure_n1 — signed history (as before)
 #   hit_n1                  — unsigned outcome (NEW covariate)
 #   angle / angle_n1        — fixed -45 centering (as before)
@@ -164,7 +166,8 @@ def engineer_features(df_in, acuity_rank):
     df['_trial_in_sess'] = df.groupby([RAT_COL, SESSION_COL]).cumcount()
     n_first = (df['_trial_in_sess'] == 0).sum()
     df = df[df['_trial_in_sess'] > 0].drop(columns='_trial_in_sess')
-    print(f"  Dropped {n_first} first-of-session trials")
+    print(f"  Dropped {n_first} first-of-session trials") # if trial number 0 repeats it's a problem with .cumcount()
+    # I am sure I can do this in a easier way.
 
     # signed action_n-1: ensure -1/+1 coding
     if df[ACTION_N1_COL].between(0, 1).all():
@@ -190,7 +193,7 @@ def engineer_features(df_in, acuity_rank):
 
     # transition_dir
     def trans_dir(row):
-        rmap   = acuity_rank.get(row[RAT_COL], {})
+        rmap   = acuity_rank.get(row[RAT_COL], {}) # rmap = { 1: 1,   # T = low 2: 3,   # V = high3: 2    # VT = mid}
         r_prev = rmap.get(row[MOD_N1_COL])
         r_curr = rmap.get(row[MOD_COL])
         if r_prev is None or r_curr is None: return np.nan
@@ -199,7 +202,7 @@ def engineer_features(df_in, acuity_rank):
         return 'same'
     df['transition_dir'] = df.apply(trans_dir, axis=1)
 
-    # transition_cell (for Formula 3)
+    # transition_cell (for Formula 3) --> but don't we have this already in the data? check if they are the same thing
     mod_label = {1: 'T', 2: 'V', 3: 'VT'}
     df['transition_cell'] = (
         df[MOD_N1_COL].map(mod_label).astype(str)
@@ -225,7 +228,8 @@ df_model = engineer_features(df[df['split'] == 'model'], acuity_rank)
 def session_mean_center(df, cols, group=(RAT_COL, SESSION_COL)):
     df = df.copy()
     for c in cols:
-        sess_mean = df.groupby(list(group))[c].transform('mean')
+        sess_mean = df.groupby(list(group))[c].transform('mean') # transform applies the groupby mean back to the original dataframe, 
+                                                                 # so each trial gets the mean of its session.
         df[f'{c}_c'] = df[c] - sess_mean
     return df
 
@@ -234,7 +238,8 @@ df_model = session_mean_center(
     cols=['success_n1', 'failure_n1', 'hit_n1', 'angle', 'angle_n1']
 )
 
-
+# create a way to check if the centering worked correctly by comparing the original and centered columns for a few sessions
+# or a plot of where session points are before and after centering. 
 # ============================================================
 # 6. ★ NEW: DUMMY CODING with chosen REFERENCE CATEGORIES
 # ─────────────────────────────────────────────────────────────
@@ -250,7 +255,7 @@ def make_dummies(df):
     df['ac_high'] = (df['acuity_n1'] == 'high').astype(int)
 
     cell_counts = df['transition_cell'].value_counts()
-    ref_cell    = 'V_to_V'
+    ref_cell    = cell_counts.idxmax() # we can set the reference category manually if we want, here it is T --> T because it is the most populated cell
     print(f"\n  transition_cell reference category: {ref_cell}")
     tc_dummies = []
     for cell in cell_counts.index:
@@ -306,7 +311,7 @@ def empirical_logit_plot(df, x_col, y_col=ACTION_COL, n_bins=15, min_per_bin=30,
 # 'poly3'     : x + x² + x³  (3 terms)
 # 'spline_k'  : natural cubic spline, k df  (Harrell default ~ 4)
 # ============================================================
-def expand_basis(df, col, representation):
+def expand_basis(df, col, representation): # I got the basic idea of what splines are doing, I still need to test if we need them
     df = df.copy()
     x = df[col].values.astype(float)
     if representation == 'linear':
@@ -334,10 +339,10 @@ def expand_basis(df, col, representation):
 # ============================================================
 # 9. MODEL CONFIG — pick formula, basis, random effects
 # ============================================================
-"""
 MODEL_CONFIG = {
     # which of the three formulas to fit
-    'FORMULA':                       1,        # 1 (minimal), 2 (+acuity_n1), 3 (saturated)
+    'FORMULA':                       3,
+           # 1 (minimal), 2 (+acuity_n1), 3 (saturated)
 
     # basis representation for angle terms
     'angle_representation':          'spline_4', # 'linear' | 'cubic' | 'poly3' | 'spline_3..5'
@@ -347,6 +352,34 @@ MODEL_CONFIG = {
     'random_intercept_rat':          True,
     'random_success_n1_rat':         True,
     'random_failure_n1_rat':         True,
+    'random_success_n1_c:td_down_rat': False,  
+    'random_success_n1_c:td_up_rat':   False,  
+    'random_failure_n1_c:td_down_rat': False,  
+    'random_failure_n1_c:td_up_rat':   False,  
+    'random_success_n1_c:ac_low_rat':  False,
+    'random_success_n1_c:ac_high_rat': False,
+    'random_failure_n1_c:ac_low_rat':  False,
+    'random_failure_n1_c:ac_high_rat': False,
+     
+     # Success × cell interactions (8 — T→T is reference, no slope needed)
+    'random_success_n1_c:tc_T_to_V_rat':               True,
+    'random_success_n1_c:tc_T_to_VT_rat':              True,
+    'random_success_n1_c:tc_V_to_T_rat':               True,
+    'random_success_n1_c:tc_V_to_V_rat':               True,
+    'random_success_n1_c:tc_V_to_VT_rat':              True,
+    'random_success_n1_c:tc_VT_to_T_rat':              True,
+    'random_success_n1_c:tc_VT_to_V_rat':              True,
+    'random_success_n1_c:tc_VT_to_VT_rat':             True,
+
+    # Failure × cell interactions (8)
+    'random_failure_n1_c:tc_T_to_V_rat':               True,
+    'random_failure_n1_c:tc_T_to_VT_rat':              True,
+    'random_failure_n1_c:tc_V_to_T_rat':               True,
+    'random_failure_n1_c:tc_V_to_V_rat':               True,
+    'random_failure_n1_c:tc_V_to_VT_rat':              True,
+    'random_failure_n1_c:tc_VT_to_T_rat':              True,
+    'random_failure_n1_c:tc_VT_to_V_rat':              True,
+    'random_failure_n1_c:tc_VT_to_VT_rat':             True,   
 
     # session-level random effects (level 2) — intercept only for now
     'random_intercept_rat_session':  True,
@@ -357,25 +390,7 @@ MODEL_CONFIG = {
     'use_random_correlations':       False,
     'nAGQ':                          1,       # use 0 if 1 is still too slow
 }
-"""
-MODEL_CONFIG = {
-    # which of the three formulas to fit
-    'FORMULA':                       1,        # 1 (minimal), 2 (+acuity_n1), 3 (saturated)
 
-    # random effects (rat-level — level 3)
-    'random_intercept_rat':          True,
-    'random_success_n1_rat':         False,
-    'random_failure_n1_rat':         False,
-
-    # session-level random effects (level 2) — intercept only for now
-    'random_intercept_rat_session':  True,
-    'random_success_n1_rat_session': False,   # off for speed
-    'random_failure_n1_rat_session': False,   # off for speed
-    'random_session_slopes':         False,   # ★ master switch — keep False
-
-    'use_random_correlations':       False,
-    'nAGQ':                          1,       # use 0 if 1 is still too slow
-}
 
 # ============================================================
 # ★ DIAGNOSTIC: VIF on the fixed-effects design matrix
@@ -386,25 +401,68 @@ MODEL_CONFIG = {
 # hit_n1_c is collinear with success_n1_c / failure_n1_c via
 # their interactions.
 # ============================================================
+def compute_vif(df_in, columns):
+    """Compute VIF for each column by regressing it on all others."""
+    from sklearn.linear_model import LinearRegression
+    vif_rows = []
+    X = df_in[columns].dropna().values
+    for i, col in enumerate(columns):
+        y = X[:, i]
+        X_others = np.delete(X, i, axis=1)
+        lr = LinearRegression().fit(X_others, y)
+        r2 = lr.score(X_others, y)
+        vif = 1 / (1 - r2) if r2 < 1 else np.inf
+        vif_rows.append({'term': col, 'R²_on_others': r2, 'VIF': vif})
+    return pd.DataFrame(vif_rows).sort_values('VIF', ascending=False)
 
+
+# Build the fixed-effects design matrix as the model sees it.
+# Need to expand splines and include interaction columns.
+_df_vif, _ = expand_basis(df_model[['angle_c']].copy(), 'angle_c',
+                          MODEL_CONFIG['angle_representation'])
+df_design = df_model.copy()
+for col in _df_vif.columns:
+    df_design[col] = _df_vif[col].values
+
+# add interaction columns explicitly so VIF sees them
+df_design['success_x_td_down'] = df_design['success_n1_c'] * df_design['td_down']
+df_design['success_x_td_up']   = df_design['success_n1_c'] * df_design['td_up']
+df_design['failure_x_td_down'] = df_design['failure_n1_c'] * df_design['td_down']
+df_design['failure_x_td_up']   = df_design['failure_n1_c'] * df_design['td_up']
+
+vif_cols = [c for c in [
+    'angle_c_s1', 'angle_c_s2', 'angle_c_s3', 'angle_c_s4',  # spline (some may be dropped)
+    'angle_n1_c', 'hit_n1_c',
+    'success_n1_c', 'failure_n1_c',
+    'td_down', 'td_up',
+    'success_x_td_down', 'success_x_td_up',
+    'failure_x_td_down', 'failure_x_td_up',
+] if c in df_design.columns]
+
+print("\n" + "="*60)
+print("DIAGNOSTIC — VIF on fixed-effects design matrix")
+print("="*60)
+vif_df = compute_vif(df_design, vif_cols)
+print(vif_df.round(2).to_string(index=False))
+print("\nVIF > 5: suspicious; VIF > 10: clear multicollinearity.")
 
 # ============================================================
 # 10. FORMULA BUILDER
 # ============================================================
 def build_formula(config, df, transition_cell_dummies):
     # angle bases
+    df, angle_terms    = expand_basis(df, 'angle_c',    config['angle_representation'])
+    df, angle_n1_terms = expand_basis(df, 'angle_n1_c', config['angle_n1_representation'])
 
     fixed = []
-    #fixed += angle_terms + angle_n1_terms
-    #fixed += ['hit_n1_c']                                # ★ unsigned outcome covariate
-    #fixed += ['success_n1_c', 'failure_n1_c']            # signed history main effects
-    fixed += ['failure_n1_c'] 
+    fixed += angle_terms + angle_n1_terms
+    fixed += ['hit_n1_c']                                # ★ unsigned outcome covariate
+    fixed += ['success_n1_c', 'failure_n1_c']            # signed history main effects
 
     if config['FORMULA'] == 1:
         fixed += ['td_down', 'td_up']
-        #fixed += ['success_n1_c:td_down', 'success_n1_c:td_up']
+        fixed += ['success_n1_c:td_down', 'success_n1_c:td_up']
         fixed += ['failure_n1_c:td_down', 'failure_n1_c:td_up']
-        print("Formula 1: no transition_dir or acuity_n1 terms")
 
     elif config['FORMULA'] == 2:
         fixed += ['td_down', 'td_up']
@@ -427,6 +485,14 @@ def build_formula(config, df, transition_cell_dummies):
     if config['random_intercept_rat']:  rat_terms.append('1')
     if config['random_success_n1_rat']: rat_terms.append('success_n1_c')
     if config['random_failure_n1_rat']: rat_terms.append('failure_n1_c')
+    if config['random_success_n1_c:td_down_rat']: rat_terms.append('success_n1_c:td_down')
+    if config['random_success_n1_c:td_up_rat']: rat_terms.append('success_n1_c:td_up')
+    if config['random_failure_n1_c:td_down_rat']: rat_terms.append('failure_n1_c:td_down')
+    if config['random_failure_n1_c:td_up_rat']: rat_terms.append('failure_n1_c:td_up') 
+    if config['random_success_n1_c:ac_low_rat']: rat_terms.append('success_n1_c:ac_low')
+    if config['random_success_n1_c:ac_high_rat']: rat_terms.append('success_n1_c:ac_high')
+    if config['random_failure_n1_c:ac_low_rat']: rat_terms.append('failure_n1_c:ac_low')
+    if config['random_failure_n1_c:ac_high_rat']: rat_terms.append('failure_n1_c:ac_high')
 
     sess_terms = []
     if config['random_intercept_rat_session']:
@@ -555,6 +621,7 @@ write.csv(preds_df, file.path(out_dir, "predictions.csv"), row.names = FALSE)
 cat("[", format(Sys.time()), "] Done\n", sep="")
 """
 
+
 # ============================================================
 # 11. ★ CHANGED: FIT VIA SUBPROCESS, REPORT FROM DICT
 # ============================================================
@@ -653,21 +720,346 @@ def report(result):
     print(f"  n_fit: {result['n_fit']}")
 
 
+# ============================================================
+# ★ DIAGNOSTIC — trial counts and per-rat empirical shifts
+# ─────────────────────────────────────────────────────────────
+# Tests whether the fixed-effect interaction is dominated by
+# high-N rats. Computes per-rat empirical failure-slope shifts
+# directly from the data (no model assumptions), then asks:
+#   (a) is there a trial-count correlation with shift magnitude?
+#   (b) does the trial-weighted mean differ from unweighted?
+# If the gap is large, the −0.25 model coefficient is partly an
+# artifact of unequal N rather than a clean cohort average.
+# ============================================================
+def per_rat_empirical_shift(rat_df, history_col, action_col='action',
+                            transition_col='transition_dir',
+                            min_per_bin=30):
+    """
+    For a single rat: compute the slope of P(action=right) on
+    `history_col` ∈ {−1, 0, +1} within each transition cell.
+    Slope is (P(right|history=+1) − P(right|history=−1)) / 2.
+    """
+    out = {}
+    for td in ['same', 'down', 'up']:
+        sub = rat_df[rat_df[transition_col] == td]
+        n_plus  = (sub[history_col] == +1).sum()
+        n_minus = (sub[history_col] == -1).sum()
+        if n_plus < min_per_bin or n_minus < min_per_bin:
+            out[td] = np.nan
+            continue
+        p_plus  = sub.loc[sub[history_col] == +1, action_col].mean()
+        p_minus = sub.loc[sub[history_col] == -1, action_col].mean()
+        out[td] = (p_plus - p_minus) / 2
+    return pd.Series(out)
+
+
+print("\n" + "="*60)
+print("DIAGNOSTIC — trial counts and per-rat empirical shifts")
+print("="*60)
+
+# Trial counts per rat
+trial_counts = df_model.groupby('rat').size().rename('n_trials')
+print(f"\nTrial counts per rat:")
+print(trial_counts.sort_values().to_string())
+print(f"Range: {trial_counts.min()} to {trial_counts.max()} "
+      f"(ratio: {trial_counts.max()/trial_counts.min():.2f}x)")
+
+# --- Failure-history empirical shifts ---
+per_rat_fail = df_model.groupby('rat', group_keys=False).apply(
+    lambda d: per_rat_empirical_shift(d, 'failure_n1'),
+    include_groups=False,
+)
+per_rat_fail['shift_same_to_down'] = per_rat_fail['down'] - per_rat_fail['same']
+per_rat_fail['shift_same_to_up']   = per_rat_fail['up']   - per_rat_fail['same']
+per_rat_fail = per_rat_fail.join(trial_counts)
+
+print("\nPer-rat empirical FAILURE slope by transition (raw probabilities):")
+print(per_rat_fail.round(3).to_string())
+
+w = per_rat_fail['n_trials']
+shift = per_rat_fail['shift_same_to_down']
+mask = shift.notna()
+weighted_mean   = (shift[mask] * w[mask]).sum() / w[mask].sum()
+unweighted_mean = shift[mask].mean()
+trial_count_corr = w[mask].corr(shift[mask])
+
+print(f"\nFAILURE same→down shift:")
+print(f"  Trial-weighted mean: {weighted_mean:+.4f}")
+print(f"  Unweighted mean:     {unweighted_mean:+.4f}")
+print(f"  Difference:          {weighted_mean - unweighted_mean:+.4f}")
+print(f"  Correlation between trial count and shift: r = {trial_count_corr:+.3f}")
+
+# --- Same for win-history ---
+per_rat_succ = df_model.groupby('rat', group_keys=False).apply(
+    lambda d: per_rat_empirical_shift(d, 'success_n1'),
+    include_groups=False,
+)
+per_rat_succ['shift_same_to_down'] = per_rat_succ['down'] - per_rat_succ['same']
+per_rat_succ['shift_same_to_up']   = per_rat_succ['up']   - per_rat_succ['same']
+per_rat_succ = per_rat_succ.join(trial_counts)
+
+print("\nPer-rat empirical SUCCESS slope by transition (raw probabilities):")
+print(per_rat_succ.round(3).to_string())
+shift_s = per_rat_succ['shift_same_to_down']
+mask_s = shift_s.notna()
+w_mean_s   = (shift_s[mask_s] * w[mask_s]).sum() / w[mask_s].sum()
+uw_mean_s  = shift_s[mask_s].mean()
+print(f"\nSUCCESS same→down shift:")
+print(f"  Trial-weighted mean: {w_mean_s:+.4f}")
+print(f"  Unweighted mean:     {uw_mean_s:+.4f}")
+print(f"  Correlation between trial count and shift: r = {w[mask_s].corr(shift_s[mask_s]):+.3f}")
+
+
+
+
+
+
+
 
 # ============================================================
 # 12. RUN
 # ============================================================
 
+# (a) diagnostics first — empirical logit plots
+emp_a  = empirical_logit_plot(df_model, 'angle_c')
+emp_an = empirical_logit_plot(df_model, 'angle_n1_c')
+plt.show()
+
+
+# ============================================================
+# (a2) RECONSTRUCT result_1 from previous fit's terminal output
+#      + load old BLUPs as a stand-in for the new fit's BLUPs
+#      + run diagnostic CHECKS 1–4
+# ============================================================
+
+# --- Fixed effects from terminal output of the correlated-fit ---
+fixed_data = [
+    {'term': '(Intercept)',            'Estimate':  1.5668, 'Std. Error': 0.0930, 'z value':  16.8529, 'Pr(>|z|)': 0.0000},
+    {'term': 'angle_c_s1',             'Estimate': -3.0998, 'Std. Error': 0.0231, 'z value': -134.2086,'Pr(>|z|)': 0.0000},
+    {'term': 'angle_c_s2',             'Estimate': -2.7182, 'Std. Error': 0.0145, 'z value': -186.8973,'Pr(>|z|)': 0.0000},
+    {'term': 'angle_c_s3',             'Estimate': -0.2937, 'Std. Error': 0.0176, 'z value': -16.7132, 'Pr(>|z|)': 0.0000},
+    {'term': 'angle_n1_c',             'Estimate':  0.0033, 'Std. Error': 0.0003, 'z value':  13.0196, 'Pr(>|z|)': 0.0000},
+    {'term': 'hit_n1_c',               'Estimate':  0.0420, 'Std. Error': 0.0089, 'z value':   4.7368, 'Pr(>|z|)': 0.0000},
+    {'term': 'success_n1_c',           'Estimate': -0.0090, 'Std. Error': 0.0702, 'z value':  -0.1278, 'Pr(>|z|)': 0.8983},
+    {'term': 'failure_n1_c',           'Estimate':  0.0622, 'Std. Error': 0.0460, 'z value':   1.3540, 'Pr(>|z|)': 0.1757},
+    {'term': 'td_down',                'Estimate':  0.0198, 'Std. Error': 0.0093, 'z value':   2.1323, 'Pr(>|z|)': 0.0330},
+    {'term': 'td_up',                  'Estimate':  0.0220, 'Std. Error': 0.0093, 'z value':   2.3671, 'Pr(>|z|)': 0.0179},
+    {'term': 'success_n1_c:td_down',   'Estimate':  0.0941, 'Std. Error': 0.0098, 'z value':   9.5922, 'Pr(>|z|)': 0.0000},
+    {'term': 'success_n1_c:td_up',     'Estimate': -0.0937, 'Std. Error': 0.0104, 'z value':  -8.9716, 'Pr(>|z|)': 0.0000},
+    {'term': 'failure_n1_c:td_down',   'Estimate': -0.2480, 'Std. Error': 0.0206, 'z value': -12.0390, 'Pr(>|z|)': 0.0000},
+    {'term': 'failure_n1_c:td_up',     'Estimate': -0.0125, 'Std. Error': 0.0172, 'z value':  -0.7224, 'Pr(>|z|)': 0.4700},
+]
+fixed_df = pd.DataFrame(fixed_data)
+
+ranef_var_data = [
+    {'grp': 'rat:date', 'var1': '(Intercept)',  'var2': None,           'vcov': 0.2628, 'sdcor':  0.5127},
+    {'grp': 'rat',      'var1': '(Intercept)',  'var2': None,           'vcov': 0.0992, 'sdcor':  0.3150},
+    {'grp': 'rat',      'var1': 'success_n1_c', 'var2': None,           'vcov': 0.0580, 'sdcor':  0.2408},
+    {'grp': 'rat',      'var1': 'failure_n1_c', 'var2': None,           'vcov': 0.0233, 'sdcor':  0.1527},
+    {'grp': 'rat',      'var1': '(Intercept)',  'var2': 'success_n1_c', 'vcov': 0.0013, 'sdcor':  0.0171},
+    {'grp': 'rat',      'var1': '(Intercept)',  'var2': 'failure_n1_c', 'vcov': 0.0066, 'sdcor':  0.1380},
+    {'grp': 'rat',      'var1': 'success_n1_c', 'var2': 'failure_n1_c', 'vcov':-0.0351, 'sdcor': -0.9556},
+]
+ranef_var_df = pd.DataFrame(ranef_var_data)
+
+meta = {
+    'aic': '475194.093857127', 'logLik': '-237576.046928563',
+    'n_obs': '479012', 'singular': 'FALSE', 'converged': 'TRUE',
+    'fit_minutes': '144.93',
+}
+
+# Load old BLUPs as stand-in for the new fit's BLUPs (different fit, but same rats)
+OLD_BLUPS_PATH = str(OUT04 / "a_continuous_strength" / "model_ranef.csv")
+old_blups = pd.read_csv(OLD_BLUPS_PATH)
+old_blups = old_blups.rename(columns={
+    '(Intercept)': 'intercept',
+    'success_n1':  'success_n1_c',
+    'failure_n1':  'failure_n1_c',
+    'rat':         'id',
+})
+print("Loaded old BLUPs:", old_blups.shape, "columns:", old_blups.columns.tolist())
+
+result_1 = {
+    'fixed':     fixed_df,
+    'ranef_var': ranef_var_df,
+    'blups':     {'rat': old_blups},
+    'meta':      meta,
+    'formula':   None,
+    'n_fit':     479012,
+}
+
+# ============================================================
+# Save reconstructed (old / correlated) result_1 to disk
+# so future sessions can skip the reconstruction step
+# ============================================================
+import pickle
+RECON_DIR = str(OUT04 / "b_rank_transition_fits" / "formula1_correlated_RECONSTRUCTED")
+os.makedirs(RECON_DIR, exist_ok=True)
+with open(os.path.join(RECON_DIR, 'result_reconstructed.pkl'), 'wb') as f:
+    pickle.dump(result_1, f)
+print(f"Saved reconstructed result_1 to {RECON_DIR}")
+
+
+# ============================================================
+# Load the || (uncorrelated) refit result from disk
+# ============================================================
+with open(str(OUT04 / "b_rank_transition_fits" / "formula1_uncorrelated" / "result.pkl"), 'rb') as f:
+    result_1_uncorr = pickle.load(f)
+
+
+# ============================================================
+# DIAGNOSTIC CHECKS — pick which fit to diagnose
+# ============================================================
+import re
+
+result = result_1_uncorr        # ← swap to result_1 here to diagnose the correlated/old fit instead
+fixed = result['fixed'].set_index('term')
+"""
+# Combine rat-level BLUPs across || pseudo-groups (works for both | and || fits)
+blups_dict = result['blups']
+print("Available BLUP groups:", list(blups_dict.keys()))
+
+rat_keys = [k for k in blups_dict.keys()
+            if k == 'rat' or re.match(r'^rat_\d+$', k)]
+print(f"Rat-level groups to merge: {rat_keys}")
+
+blups_rat = None
+for k in rat_keys:
+    df = blups_dict[k].copy()
+    df = df.rename(columns={
+        '(Intercept)':  'intercept',
+        'X.Intercept.': 'intercept',
+    })
+    if blups_rat is None:
+        blups_rat = df
+    else:
+        blups_rat = blups_rat.merge(df, on='id', how='outer')
+
+if blups_rat is None:
+    raise RuntimeError(f"No rat-level BLUPs found. Keys: {list(blups_dict.keys())}")
+
+print(f"Combined rat-level BLUPs: shape={blups_rat.shape}, "
+      f"columns={blups_rat.columns.tolist()}")
+
+# (Checks 1–4 follow below, unchanged)
+
+# ─── CHECK 1: intercept interpretation ───
+
+print("\n" + "="*60)
+print("CHECK 1 — intercept interpretation")
+print("="*60)
+
+p_overall = df_model['action'].mean()
+p_same    = df_model.loc[df_model['transition_dir'] == 'same', 'action'].mean()
+print(f"Raw P(right), all trials:            {p_overall:.3f}")
+print(f"Raw P(right), same-modality trials:  {p_same:.3f}")
+
+b0 = fixed.loc['(Intercept)', 'Estimate']
+print(f"\nIntercept alone: logit={b0:.3f} → P={1/(1+np.exp(-b0)):.3f}")
+
+spline_terms = [t for t in fixed.index if t.startswith('angle_c_s')]
+print(f"Spline terms in model: {spline_terms}")
+
+if spline_terms:
+    # rebuild the spline basis on the full angle_c range from df_model,
+    # then read off the basis values at the row closest to angle_c = 0
+    full_basis_df, _ = expand_basis(
+        df_model[['angle_c']].copy(), 'angle_c',
+        MODEL_CONFIG['angle_representation']
+    )
+    closest_idx = df_model['angle_c'].abs().idxmin()
+    actual_angle = df_model.loc[closest_idx, 'angle_c']
+    spline_contrib = sum(
+        full_basis_df.loc[closest_idx, t] * fixed.loc[t, 'Estimate']
+        for t in spline_terms if t in full_basis_df.columns
+    )
+    print(f"Evaluating spline at angle_c ≈ {actual_angle:.4f}")
+else:
+    spline_contrib = 0.0
+
+logit_at_ref = b0 + spline_contrib
+p_at_ref     = 1 / (1 + np.exp(-logit_at_ref))
+print(f"Intercept + spline(≈0): logit={logit_at_ref:.3f} → P={p_at_ref:.3f}")
+print(f"\nDiscrepancy vs raw same-modality P(right) ({p_same:.3f}): {abs(p_at_ref - p_same):.3f}")
+
+# ─── CHECK 2: lose-history sign stability ───
+print("\n" + "="*60); print("CHECK 2 — lose-history sign stability"); print("="*60)
+failure_main   = fixed.loc['failure_n1_c', 'Estimate']
+failure_x_down = fixed.loc['failure_n1_c:td_down', 'Estimate']
+failure_x_up   = fixed.loc['failure_n1_c:td_up',   'Estimate']
+per_rat_failure = pd.DataFrame({
+    'rat':  blups_rat['id'],
+    'same': failure_main + blups_rat['failure_n1_c'],
+    'down': failure_main + failure_x_down + blups_rat['failure_n1_c'],
+    'up':   failure_main + failure_x_up   + blups_rat['failure_n1_c'],
+})
+print("Per-rat failure_n1 slope by transition:")
+print(per_rat_failure.round(3).to_string(index=False))
+n_rats = len(per_rat_failure)
+print(f"\nSign agreement same↔down: {((per_rat_failure['same']>0)==(per_rat_failure['down']>0)).sum()}/{n_rats}")
+print(f"Sign agreement same↔up:   {((per_rat_failure['same']>0)==(per_rat_failure['up']>0)).sum()}/{n_rats}")
+
+
+# ─── CHECK 3: win-history sign instability ───
+print("\n" + "="*60); print("CHECK 3 — win-history sign instability"); print("="*60)
+success_main   = fixed.loc['success_n1_c', 'Estimate']
+success_x_down = fixed.loc['success_n1_c:td_down', 'Estimate']
+success_x_up   = fixed.loc['success_n1_c:td_up',   'Estimate']
+per_rat_success = pd.DataFrame({
+    'rat':  blups_rat['id'],
+    'same': success_main + blups_rat['success_n1_c'],
+    'down': success_main + success_x_down + blups_rat['success_n1_c'],
+    'up':   success_main + success_x_up   + blups_rat['success_n1_c'],
+})
+print("Per-rat success_n1 slope by transition:")
+print(per_rat_success.round(3).to_string(index=False))
+print(f"\nSign agreement same↔down: {((per_rat_success['same']>0)==(per_rat_success['down']>0)).sum()}/{n_rats}")
+print(f"Sign agreement same↔up:   {((per_rat_success['same']>0)==(per_rat_success['up']>0)).sum()}/{n_rats}")
+
+
+# ─── CHECK 4: win/lose BLUP anti-correlation ───
+print("\n" + "="*60); print("CHECK 4 — win/lose BLUP anti-correlation"); print("="*60)
+emp_corr = blups_rat['success_n1_c'].corr(blups_rat['failure_n1_c'])
+print(f"Empirical correlation of BLUPs across {n_rats} rats: {emp_corr:.3f}")
+fig, ax = plt.subplots(figsize=(6, 6))
+ax.scatter(blups_rat['success_n1_c'], blups_rat['failure_n1_c'], s=80)
+for _, row in blups_rat.iterrows():
+    ax.annotate(str(row['id']), (row['success_n1_c'], row['failure_n1_c']),
+                fontsize=9, xytext=(5, 5), textcoords='offset points')
+ax.axhline(0, color='k', lw=0.5); ax.axvline(0, color='k', lw=0.5)
+ax.set_xlabel('success_n1 BLUP'); ax.set_ylabel('failure_n1 BLUP')
+ax.set_title(f'Rat-level random slopes: r = {emp_corr:.2f}')
+plt.tight_layout(); plt.show()
+
+
+# ─── Save key estimates for later comparison with || refit ───
+print("\n" + "="*60); print("KEY ESTIMATES TO COMPARE WITH THE || REFIT"); print("="*60)
+key_terms = [
+    'success_n1_c', 'failure_n1_c',
+    'success_n1_c:td_down', 'success_n1_c:td_up',
+    'failure_n1_c:td_down', 'failure_n1_c:td_up',
+    'td_down', 'td_up', 'hit_n1_c',
+]
+key_estimates_correlated = fixed.loc[key_terms, ['Estimate', 'Std. Error', 'z value', 'Pr(>|z|)']]
+print("\nFixed effects with the CORRELATED random structure:")
+print(key_estimates_correlated.round(4))
+saved_correlated_fit = {
+    'fixed':     key_estimates_correlated.copy(),
+    'ranef_var': result['ranef_var'].copy(),
+    'aic':       float(result['meta']['aic']),
+}
+print(f"\nAIC of correlated-random-effects model: {saved_correlated_fit['aic']:.2f}")
+"""
 
 # ============================================================
 # (b) Formula 1 || refit — THE LONG ONE
 # ============================================================
 input("\n>>> Diagnostics done. Press Enter to start the || refit (will take 1-2h)... ")
 
-MODEL_CONFIG['FORMULA'] = 1
+MODEL_CONFIG['FORMULA'] = 3
 result_1_uncorr = fit_model(
     df_model, MODEL_CONFIG, transition_cell_dummies,
-    output_dir=r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\formula1_minimal'
+    output_dir=str(OUT04 / "b_rank_transition_fits" / "formula3_uncorrelated_try_more_random")
 )
 report(result_1_uncorr)
 
@@ -680,7 +1072,7 @@ report(result_1_uncorr)
 # the data well, independent of how individual coefficients
 # might be interpreted.
 # ============================================================
-preds_path = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\fits\formula1_uncorrelated\predictions.csv'
+preds_path = str(OUT04 / "b_rank_transition_fits" / "formula3_uncorrelated_try_more_random" / "predictions.csv")
 preds = pd.read_csv(preds_path)
 print(f"Loaded predictions: {len(preds)} trials")
 
@@ -726,3 +1118,20 @@ for (rat_id, td), cell_df in preds.groupby(['rat', 'transition_dir']):
     })
 slope_df = pd.DataFrame(slope_compare)
 print(slope_df.round(3).to_string(index=False))
+
+print("\n" + "="*60)
+print("Average raw vs predicted slope by transition")
+print("="*60)
+
+summary = (
+    slope_df.groupby('transition_dir')
+            .agg(
+                raw_mean=('raw_slope', 'mean'),
+                pred_mean=('pred_slope', 'mean'),
+                raw_sd=('raw_slope', 'std'),
+                pred_sd=('pred_slope', 'std'),
+                n=('raw_slope', 'count')
+            )
+)
+
+print(summary.round(4))

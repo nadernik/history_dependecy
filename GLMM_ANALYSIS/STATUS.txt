@@ -73,3 +73,25 @@ Suggested next steps
    GLMM I is equivalent either way).
 4. Run glmm_II_post_hoc.py only if the legacy tables need regenerating; run glmm_hit_n_1.py if its outputs are wanted.
 5. Optionally expand the glmm_hit_n_1.py header and find or rewrite the modality_contrasts script.
+
+
+Update 2026-11-11: 04_acuity_transitions moved into GLMM_ANALYSIS
+------------------------------------------------------------------
+- GLM_HISTORY_ANALYSIS/04_acuity_transitions/{a_continuous_strength,b_rank_transition_fits,
+  c_validation_vs_per_cell} -> GLMM_ANALYSIS/scripts/04_acuity_transitions/.
+- Outputs: fits/ (969 MB; the item above about fits/ is answered: all six folders are
+  04 step-b mixed-model fits, none belongs to GLMM I or II) ->
+  outputs/04_acuity_transitions/b_rank_transition_fits/; validation_results ->
+  .../c_validation_vs_per_cell/formula1, validation_results_2.0 -> formula2,
+  validation_results_2 -> formula2_earlier_run; model_*.csv and model_fit.R of step a ->
+  outputs/04_acuity_transitions/a_continuous_strength/.
+- per_cell_glm_results/ stays in the project root. Its producer is
+  REWARD_and_CHOICE_HISTORY_PSYCHOMETRICS/GLM_transition_mod_check.py (the old README said the
+  script was missing). Not moved, pending a decision.
+- Hardcoded project paths replaced by paths derived from each script's location.
+- Checked: all paths resolve on this machine (Rscript.exe, R library, imports, data files).
+  validation_against_per_cell.py and _2.py were rerun from the new location (outputs sent to a
+  scratch folder) and reproduce the stored CSV files exactly. The fit scripts were not run.
+- Not done: fits/formula3_* do not exist, so validation_against_per_cell_3.py cannot run and
+  both Formula 3 scripts still have to produce their fit first.
+- GLM_HISTORY_ANALYSIS/_unsorted left as it is.

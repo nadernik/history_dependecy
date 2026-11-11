@@ -10,7 +10,10 @@ import pandas as pd
 import subprocess
 import tempfile
 import sys
-sys.path.append(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy")
+from pathlib import Path as _Path
+PROJECT_ROOT = _Path(__file__).resolve().parents[4]   # history_dependecy/ (script is in GLMM_ANALYSIS/scripts/04_acuity_transitions/<step>/)
+sys.path.append(str(PROJECT_ROOT))
+OUT04 = PROJECT_ROOT / "GLMM_ANALYSIS" / "outputs" / "04_acuity_transitions"
 from functions_Ale import flatten_model_results, filter_training_trials
 from serial_dependence_analysis import SerialDependenceAnalyzer
 
@@ -20,7 +23,7 @@ from serial_dependence_analysis import SerialDependenceAnalyzer
 HISTORY_DEPTH = 1
 RSCRIPT       = r'C:\Program Files\R\R-4.4.1\bin\Rscript.exe'
 R_LIB         = r'C:\Users\alech\AppData\Local\R\win-library\4.4'
-BASE_DIR      = r'C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\GLM_HISTORY_ANALYSIS\04_acuity_transitions\a_continuous_strength'
+BASE_DIR      = str(OUT04 / "a_continuous_strength")
 CSV_PATH      = BASE_DIR + r'\model_data.csv'
 RESULTS_PATH  = BASE_DIR + r'\model_results.csv'
 RANEF_PATH    = BASE_DIR + r'\model_ranef.csv'
