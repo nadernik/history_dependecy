@@ -122,7 +122,7 @@ STIMULUS_ANGLE_MAX = 90.0
 ANGLE_CENTER_DEG = 45.0
 MIN_ABS_ANGLE_BETA = 1e-6
 
-OUT_DIR = "./glm_results_thesis_filtered_interaction"
+OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fit_results", "interaction_filtered")
 
 # Base features (the tactile-reference "main" columns). Modality dummies and
 # every interaction with these are added in build_design_matrix_interaction.

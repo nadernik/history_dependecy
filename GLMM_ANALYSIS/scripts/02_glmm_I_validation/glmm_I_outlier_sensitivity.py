@@ -50,7 +50,7 @@ Q_BF = "beta_failure_n-1"
 
 
 def glm_summary_path() -> Path:
-    return PROJECT_ROOT / "thesis_codes" / "section_4_GLM" / "glm_results_thesis_filtered" / "glm_summary_long.csv"
+    return PROJECT_ROOT / "thesis_codes" / "section_4_GLM" / "fit_results" / "pooled_filtered" / "glm_summary_long.csv"
 
 
 # ============================================================

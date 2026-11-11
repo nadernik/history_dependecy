@@ -48,7 +48,7 @@ A still excludes rat 11 tactile to stay consistent with §4's own convention.
 Expected input directory structure
 ----------------------------------
     <PROJECT_ROOT>/
-        glm_results_thesis_filtered_per_modality/
+        thesis_codes/section_4_GLM/fit_results/per_modality_filtered/
             glm_bootstrap_draws.parquet     (§4 bootstrap, long format)
             glm_summary_long.csv            (§4 MLE point estimates)
         GLMM_ANALYSIS/outputs/01_glmm_I/legacy_ref-visuotactile/primary/
@@ -78,7 +78,7 @@ import matplotlib.pyplot as plt
 PROJECT_ROOT = Path(__file__).resolve().parents[3]   # history_dependecy/ (script lives in GLMM_ANALYSIS/scripts/02_glmm_I_validation/)
 
 # Fixed relative structure (change only if the analysis outputs move)
-GLM_SUBDIR       = Path("glm_results_thesis_filtered_per_modality")   # §4: one GLM per rat x modality, training-filtered
+GLM_SUBDIR       = Path("thesis_codes") / "section_4_GLM" / "fit_results" / "per_modality_filtered"   # §4: one GLM per rat x modality, training-filtered
 # Legacy GLMM I fit (visuotactile reference). In GLMM I history is pooled across modality, so its
 # history and random effects do not depend on the modality reference: it is equivalent to a
 # tactile-reference fit. After a refit, point this to "primary_ref-tactile".

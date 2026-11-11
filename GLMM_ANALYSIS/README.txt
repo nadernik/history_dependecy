@@ -46,13 +46,13 @@ Order of the analysis
                     Section 4 per-rat GLMs (one per rat x modality, collapsed
                     across modality by inverse-variance weights) against the GLMM I
                     shrunk per-rat estimates. Reads
-                    glm_results_thesis_filtered_per_modality/ and the GLMM I fit.
+                    thesis_codes/section_4_GLM/fit_results/per_modality_filtered/ and the GLMM I fit.
                     Output: outputs/02_glmm_I_validation/shrinkage_plots/
   glmm_I_outlier_sensitivity.py
                     Leave-one-rat-out sensitivity of the GLMM I random-effect
                     correlation and variance ratio, against the section 4 per-rat
                     estimates (pooled, training-filtered, thesis_codes/
-                    section_4_GLM/glm_results_thesis_filtered). Needs --pkl
+                    section_4_GLM/fit_results/pooled_filtered). Needs --pkl
                     pointing to glmm_I_full.pkl.
                     Output: outputs/02_glmm_I_validation/outlier_sensitivity/
   (outputs/02_glmm_I_validation/modality_contrasts/ holds within-rat modality

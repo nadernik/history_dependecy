@@ -29,11 +29,11 @@
   "alpha": 0.05,
   "p_value_method": "Two-sided equal-tail bootstrap p-value with plus-one correction",
   "inputs": {
-    "glm_summary": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\glm_summary_long.csv",
-    "bootstrap_draws": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\glm_bootstrap_draws.parquet"
+    "glm_summary": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\pooled_filtered\\glm_summary_long.csv",
+    "bootstrap_draws": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\pooled_filtered\\glm_bootstrap_draws.parquet"
   },
   "outputs": {
-    "canonical": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\canonical_inference\\pooled_glm_log_odds_inference_48.csv",
-    "table_compatible": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\canonical_inference\\glm_coefficient_significance_unpenalized.csv"
+    "canonical": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\pooled_filtered\\canonical_inference\\pooled_glm_log_odds_inference_48.csv",
+    "table_compatible": "C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\pooled_filtered\\canonical_inference\\glm_coefficient_significance_unpenalized.csv"
   }
 }

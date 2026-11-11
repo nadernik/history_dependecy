@@ -53,16 +53,16 @@ from stats_helper import holm_correction, boot_p_value, compute_global_int_digit
 # ---------------------------------------------------------------------------
 # Load inputs once, shared across all three tables
 # ---------------------------------------------------------------------------
-lr = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_lr_tests.csv")
+lr = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_lr_tests.csv")
 lr = lr[lr["C"] == "unpenalized"]
 
-contrasts = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_contrasts_long.csv")
+contrasts = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_contrasts_long.csv")
 contrasts = contrasts[contrasts["C"] == "unpenalized"]
 
-summ = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_summary_long.csv")
+summ = pd.read_csv(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_summary_long.csv")
 summ = summ[summ["C"] == "unpenalized"]
 
-boot = pd.read_parquet(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_bootstrap_draws.parquet")
+boot = pd.read_parquet(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_bootstrap_draws.parquet")
 boot = boot[(boot["C"] == "unpenalized") & (boot["kind"] == "contrast")]
 
 RATS = sorted(lr["rat_id"].unique())

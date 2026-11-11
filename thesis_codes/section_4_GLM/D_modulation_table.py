@@ -20,8 +20,8 @@ from table_utils import Cell, Table, fmt_est_ci, stars_for_q, table_to_docx, tab
 
 HERE = Path(__file__).resolve().parent
 #INPUT_DIR = HERE / "upload"
-BOOT_PATH = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_bootstrap_draws.parquet")
-SUMMARY_PATH = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_summary_long.csv")
+BOOT_PATH = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_bootstrap_draws.parquet")
+SUMMARY_PATH = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_summary_long.csv")
 OUT_DIR = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\tables_thesis\section_4")
 
 RATS = [4, 6, 7, 11, 13, 16]

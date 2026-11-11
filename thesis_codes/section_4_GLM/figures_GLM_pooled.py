@@ -67,8 +67,8 @@ PATHS = dict(
     boot_param   = f"{UPLOAD_DIR}/tables/bootstrap_parameter_summary.csv",
     contrast_sum = f"{UPLOAD_DIR}/tables/contrast_summary_long.csv",
     contrast_cov = f"{UPLOAD_DIR}/tables/contrast_covariance_long.csv",
-    glm_summary  = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_summary_long.csv",
-    glm_draws    = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_bootstrap_draws.parquet",
+    glm_summary  = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_summary_long.csv",
+    glm_draws    = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_bootstrap_draws.parquet",
 )
 # psychometric raw joint-bootstrap draws, one file per rat (only needed for CLOUD_STYLE="raw")
 PSYCH_DRAWS_NPZ = {

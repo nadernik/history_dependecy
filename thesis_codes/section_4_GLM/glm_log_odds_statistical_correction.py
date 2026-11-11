@@ -28,7 +28,7 @@ import pandas as pd
 
 DEFAULT_RESULTS_DIR = Path(
     r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy"
-    r"\thesis_codes\section_4_GLM\glm_results_thesis_filtered"
+    r"\thesis_codes\section_4_GLM\fit_results\pooled_filtered"
 )
 
 CHOICE_OUTCOME_COEFFICIENTS = (

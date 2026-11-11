@@ -18,8 +18,8 @@ from table_utils import Cell, Table, table_to_docx
 # =============================================================================
 # CONFIG — edit these paths
 # =============================================================================
-POOLED_SUMMARY = Path("C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\glm_results_thesis_filtered\\glm_summary_long.csv")
-MODALITY_SUMMARY = Path("C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\glm_results_thesis_filtered_interaction\\glm_summary_long.csv")
+POOLED_SUMMARY = Path("C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\pooled_filtered\\glm_summary_long.csv")
+MODALITY_SUMMARY = Path("C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\section_4_GLM\\fit_results\\interaction_filtered\\glm_summary_long.csv")
 OUT_DIR = Path("C:\\dev\\projects\\Thesis_SISSA\\Rats\\history_dependecy\\thesis_codes\\ale_thesis_fig_tab\\tables_thesis\\section_4")
 REFERENCE_C = "unpenalized"
 

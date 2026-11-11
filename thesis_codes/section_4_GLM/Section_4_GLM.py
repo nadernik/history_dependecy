@@ -124,7 +124,8 @@ ANGLE_CENTER_DEG = 45.0
 MIN_ABS_ANGLE_BETA = 1e-6
 
 # Output directory.
-OUT_DIR = "./glm_results_thesis_filtered_per_modality"
+OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fit_results",
+                       {"pooled": "pooled_filtered", "per_modality": "per_modality_filtered"}[MODE])
 
 # Features for each model.
 FEATURES_FULL = [

@@ -34,7 +34,7 @@ import pandas as pd
 
 GLM_RESULTS_DIR = Path(
     r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy"
-    r"\thesis_codes\section_4_GLM\glm_results_thesis_filtered"
+    r"\thesis_codes\section_4_GLM\fit_results\pooled_filtered"
 )
 
 GLM_SUMMARY_PATH = GLM_RESULTS_DIR / "glm_summary_long.csv"

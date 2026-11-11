@@ -57,7 +57,7 @@ def boot_p_value(draws, n_boot=None):
 # ---- Paths -----------------------------------------------------------------
 
 CANDIDATE_DATA_DIRS = [
-    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered",
+    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered",
     str(Path(__file__).resolve().parent),
 ]
 
@@ -511,7 +511,7 @@ def boot_p_value(draws, n_boot=None):
 # uploaded-files dir from the Claude session that built this figure -- same
 # fallback pattern used by the Section 3 scripts in this project.
 CANDIDATE_DATA_DIRS = [
-    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered"]
+    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered"]
 
 def _find(filename_substr):
     """Locate the one file whose name contains filename_substr in the first

@@ -53,7 +53,7 @@ from scipy.stats import chi2, spearmanr
 # ----------------------------------------------------------------------------
 
 UPLOAD_DIR_3 = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_3_choice_reward\choice_reward_joint_results\filtered\pooled\tables"
-UPLOAD_DIR_4 = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered"
+UPLOAD_DIR_4 = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered"
 PATHS = dict(
     contrast_sum = f"{UPLOAD_DIR_3}/contrast_summary_long.csv",
     contrast_cov = f"{UPLOAD_DIR_3}/contrast_covariance_long.csv",

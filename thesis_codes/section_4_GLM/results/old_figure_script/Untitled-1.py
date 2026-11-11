@@ -44,7 +44,7 @@ from scipy.stats import chi2
 # CONFIG
 # ============================================================
 
-INPUT_DIR = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_per_modality")
+INPUT_DIR = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\per_modality_filtered")
 
 
 FIGURES_DIR = Path(

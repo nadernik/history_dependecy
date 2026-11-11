@@ -38,7 +38,7 @@ PSYCH_TABLE_DIR = (
     / "pooled"
     / "tables"
 )
-GLM_DIR = PROJECT_ROOT / "section_4_GLM" / "glm_results_thesis_filtered"
+GLM_DIR = PROJECT_ROOT / "section_4_GLM" / "fit_results" / "pooled_filtered"
 OUTPUT_DIR = PROJECT_ROOT / "ale_thesis_fig_tab" / "section_4"
 
 PATHS = {

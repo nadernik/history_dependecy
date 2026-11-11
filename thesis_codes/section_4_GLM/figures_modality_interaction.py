@@ -81,7 +81,7 @@ from adjustText import adjust_text
 # =============================================================================
 # CONFIG -- edit DATA_DIR to your results folder
 # =============================================================================
-DATA_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction"
+DATA_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered"
 OUT_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\images_thesis\section_4"
 
 

@@ -33,10 +33,10 @@ PSYCH_BOOTSTRAP_DIR = Path(
     r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_3_choice_reward\choice_reward_joint_results\filtered\pooled\bootstraps"
 )
 GLM_SUMMARY_CSV = Path(
-    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_summary_long.csv"
+    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_summary_long.csv"
 )
 GLM_BOOTSTRAP_PARQUET = Path(
-    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_bootstrap_draws.parquet"
+    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_bootstrap_draws.parquet"
 )
 OUTPUT_DIR = Path(
     r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\Q1_results"

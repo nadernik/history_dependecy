@@ -30,8 +30,8 @@ PSYCH_DIR            = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependec
     # must contain: contrast_summary_long.csv, contrast_covariance_long.csv
 PSYCH_BOOTSTRAP_DIR  = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_3_choice_reward\choice_reward_joint_results\filtered\pooled\bootstraps")
     # must contain: rat_{ID}_joint_bootstrap.npz files (one per rat)
-GLM_SUMMARY_CSV      = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_summary_long.csv")
-GLM_BOOTSTRAP_PARQUET = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_bootstrap_draws.parquet")
+GLM_SUMMARY_CSV      = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_summary_long.csv")
+GLM_BOOTSTRAP_PARQUET = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_bootstrap_draws.parquet")
 OUTPUT_DIR           = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\Q1_results_2.0")
 
 # ---- Analysis parameters (leave defaults unless you have a reason) ----

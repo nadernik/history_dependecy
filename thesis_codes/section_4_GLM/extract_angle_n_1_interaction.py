@@ -32,7 +32,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 # ---- EDIT THIS ------------------------------------------------------------
-BOOT_PATH = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction\glm_bootstrap_draws.parquet"
+BOOT_PATH = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered\glm_bootstrap_draws.parquet"
 # ----------------------------------------------------------------------------
 
 # Column names as seen in boot_draws_fig3_betas.parquet -- adjust if your

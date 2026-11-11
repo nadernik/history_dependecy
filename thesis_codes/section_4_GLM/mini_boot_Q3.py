@@ -1,7 +1,7 @@
 """
 Run this ON YOUR MACHINE, in the folder that has glm_bootstrap_draws.parquet
 (the full, un-trimmed bootstrap file the interaction-mode GLM script writes
-to glm_results_thesis_filtered_interaction/).
+to fit_results/interaction_filtered/).
 
 Figure 3 switched from the degree-scale delta_mu_rewarded/unrewarded to the
 log-odds beta_success_n-1/beta_failure_n-1 coefficients, so it needs THIS
@@ -22,7 +22,7 @@ resulting boot_draws_fig3_betas.parquet (should be well under 1 MB).
 """
 import pandas as pd
 
-IN_DIR = r"glm_results_thesis_filtered_interaction"
+IN_DIR = r"fit_results/interaction_filtered"
 IN_PATH = f"{IN_DIR}/glm_bootstrap_draws.parquet"
 OUT_PATH = f"{IN_DIR}/boot_draws_fig3_betas.parquet"
 

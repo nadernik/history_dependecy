@@ -119,7 +119,7 @@ from adjustText import adjust_text
 # =============================================================================
 # CONFIG -- edit DATA_DIR to your results folder
 # =============================================================================
-DATA_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\glm_results_thesis_filtered_interaction"
+DATA_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\interaction_filtered"
 OUT_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\images_thesis\section_4"
 
 # Figure 1: which coefficient panels to show (left-to-right order is fixed).
@@ -141,7 +141,7 @@ FIG4_DEFAULT_SHOW = ["failure", "success", "reward"]
 # POOLED_CI_COLUMN_PAIRS). If left as None, the script looks for pooled rows
 # inside DATA_DIR's glm_summary_long.csv (subset in POOLED_SUBSET_NAMES) and
 # stops with a clear message if there are none.
-POOLED_SUMMARY_CSV = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_summary_long.csv"
+POOLED_SUMMARY_CSV = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_summary_long.csv"
 POOLED_SUBSET_NAMES = ("pooled", "all", "pooled_all", "all_modalities")
 POOLED_CI_COLUMN_PAIRS = (("ci_low", "ci_high"), ("ci_lower", "ci_upper"),
                           ("ci_lo", "ci_hi"), ("lo", "hi"))

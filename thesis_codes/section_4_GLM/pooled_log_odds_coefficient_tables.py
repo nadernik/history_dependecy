@@ -23,8 +23,8 @@ paste-in is no longer needed, LaTeX only. `table_to_docx` still exists in
 table_utils.py if that's ever wanted back, it's just not called here.
 """
 #python "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\pooled_log_odds_coefficient_tables.py" `
-#  --summary-csv "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\glm_summary_long.csv" `
-#  --sig-csv "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered\canonical_inference\glm_contrast_significance_unpenalized.csv" `
+#  --summary-csv "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\glm_summary_long.csv" `
+#  --sig-csv "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered\canonical_inference\glm_contrast_significance_unpenalized.csv" `
 #  --out-dir "C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\tables_thesis\section_4"
 
 import argparse

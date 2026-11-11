@@ -52,7 +52,7 @@ FIT = "unpenalized"
 SUBSET = "pooled"
 
 CANDIDATE_DATA_DIRS = [
-    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\glm_results_thesis_filtered",
+    r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\section_4_GLM\fit_results\pooled_filtered",
     str(Path(__file__).resolve().parent),
 ]
 OUTPUT_DIR = Path(
