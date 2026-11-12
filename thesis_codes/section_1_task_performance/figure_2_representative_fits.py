@@ -35,7 +35,7 @@ from scipy.stats import norm
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_DIR = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\task_check_output_no_boot")
+DEFAULT_DIR = SCRIPT_DIR / 'results' / 'task_check_output_no_boot'
 DEFAULT_OUT = DEFAULT_DIR / 'figures' / 'figure_2_exemplars.svg'
 
 sys.path.insert(0, str(SCRIPT_DIR))

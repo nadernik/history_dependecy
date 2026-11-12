@@ -32,7 +32,7 @@ Justification (cite in methods):
 
 Usage:
     python reclassify_from_pickles.py
-        [--dir task_check_output_final]
+        [--dir task_check_output_boot]
         [--dry-run]        # don't overwrite pickles, print transition only
 """
 
@@ -344,7 +344,7 @@ def reclassify(output_dir, dry_run=False):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--dir', type=Path,
-                    default=SCRIPT_DIR / 'results' / 'task_check_output_final',
+                    default=SCRIPT_DIR / 'results' / 'task_check_output_boot',
                     help='Path to OUTPUT_DIR (containing raw/all_cells.pkl)')
     parser.add_argument('--dry-run', action='store_true',
                         help="Don't overwrite anything; print transition only")

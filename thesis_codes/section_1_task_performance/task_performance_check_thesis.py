@@ -64,7 +64,7 @@ BOUNDARY     = 45
 # =============================================================================
 # OUTPUT LOCATIONS
 # =============================================================================
-OUTPUT_DIR = Path('task_check_output_no_boot')
+OUTPUT_DIR = Path(__file__).resolve().parent / 'results' / 'task_check_output_no_boot'   # or ..._boot
 FIG_SUBDIR = OUTPUT_DIR / 'figures'
 RAW_SUBDIR = OUTPUT_DIR / 'raw'
 FIG_FORMAT = 'svg'

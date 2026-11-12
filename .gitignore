@@ -184,3 +184,6 @@ others/
 *.h5
 *.hdf5
 *.gz
+
+# Pickled fit results (regenerable)
+*.pkl

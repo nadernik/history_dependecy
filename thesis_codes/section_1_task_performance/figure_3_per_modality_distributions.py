@@ -36,8 +36,9 @@ from matplotlib.lines import Line2D
 
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
-DEFAULT_CSV = SCRIPT_DIR /'task_performance_summary.csv'
-DEFAULT_OUT = SCRIPT_DIR /'figures' / 'figure_3_per_modality.svg'
+DEFAULT_DIR = SCRIPT_DIR / 'results' / 'task_check_output_boot'
+DEFAULT_CSV = DEFAULT_DIR / 'task_performance_summary.csv'
+DEFAULT_OUT = DEFAULT_DIR / 'figures' / 'figure_3_per_modality.svg'
 
 TIER_COLORS = {
     'clean':  '#2E8B57',

@@ -42,8 +42,9 @@ from pathlib import Path
 # CONFIG
 # --------------------------------------------------------------------------
 SCRIPT_DIR  = Path(__file__).resolve().parent
-DEFAULT_CSV = SCRIPT_DIR / 'task_performance_summary.csv'
-DEFAULT_OUT = SCRIPT_DIR / 'figures' / 'task_performance_heatmap.svg'
+DEFAULT_DIR = SCRIPT_DIR / 'results' / 'task_check_output_boot'
+DEFAULT_CSV = DEFAULT_DIR / 'task_performance_summary.csv'
+DEFAULT_OUT = DEFAULT_DIR / 'figures' / 'task_performance_heatmap.svg'
 
 # Softer palette (matches the second heatmap you produced).
 # 'poor' is now a real exclusion signal, so goldenrod reads as

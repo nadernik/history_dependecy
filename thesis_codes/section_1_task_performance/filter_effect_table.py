@@ -18,7 +18,7 @@ import pandas as pd
 
 
 SCRIPT_DIR  = Path(__file__).resolve().parent
-DEFAULT_CSV = SCRIPT_DIR / 'results' / 'task_check_output_final' / 'task_performance_summary.csv'
+DEFAULT_CSV = SCRIPT_DIR / 'results' / 'task_check_output_boot' / 'task_performance_summary.csv'
 DEFAULT_OUT = Path(r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\tables_thesis\section_1")
 
 TIER_RANK = {'clean': 0, 'usable': 1, 'poor': 2}

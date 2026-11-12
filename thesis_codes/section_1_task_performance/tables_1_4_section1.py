@@ -33,12 +33,13 @@ Table 2's dagger below only reflects the existing (sigma-only) flag. If you
 decide to expand it, edit the `flagged = ...` line in the TABLE 2 section.
 """
 import pickle
+from pathlib import Path
 import pandas as pd
 
 from table_utils import Cell, Table, table_to_latex_longtable, latex_num
 
 # --- EDIT THESE TWO PATHS for your own machine ---
-PKL_PATH = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\task_check_output_no_boot\raw\all_cells.pkl"
+PKL_PATH = str(Path(__file__).resolve().parent / 'results' / 'task_check_output_no_boot' / 'raw' / 'all_cells.pkl')
 OUT_DIR = r"C:\dev\projects\Thesis_SISSA\Rats\history_dependecy\thesis_codes\ale_thesis_fig_tab\tables_thesis\section_1"
 
 MOD_LABEL = {1: "Tactile", 2: "Visual", 3: "Visuotactile", "pooled": "Pooled"}
