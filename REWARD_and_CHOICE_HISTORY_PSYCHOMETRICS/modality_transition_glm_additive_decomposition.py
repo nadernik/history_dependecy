@@ -1,4 +1,24 @@
+"""
+Modality Transition History Effect Analysis -- ADDITIVE DECOMPOSITION variant
+==============================================================================
 
+Question: does the effect of the previous trial's outcome (beta_success_n-1,
+beta_failure_n-1, from a per-rat GLM) change with the modality transition
+(T/V/VT on trial n-1 -> trial n)? Each rat's modalities are ranked by
+sensitivity (hierarchy model), the betas are fitted separately in each of the 9
+transition cells, and plotted ordered by that hierarchy (downgrade / same /
+upgrade transitions).
+
+SIBLING SCRIPT: the two scripts share the same core (hierarchy fit, per-cell
+GLMs, beta plot) and differ only in what they do with the betas afterwards.
+
+  THIS script (additive_decomposition): raw log-odds betas
+    (NORMALIZE_BY_ANGLE = False); decomposes the transition effect into
+    additive components (compute_additive_decomposition); saves figures only.
+  modality_transition_glm_descriptive_correlations.py: betas normalized by
+    beta_angle (NORMALIZE_BY_ANGLE = True); correlates the betas with the
+    modality hierarchy scores; saves per-cell results to per_cell_glm_results/.
+"""
 '''
 SAFELY CODING: 
 
