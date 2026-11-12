@@ -43,6 +43,10 @@ scripts read them from the same shared summary CSVs.
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
+
+OUT_DIR = Path(__file__).resolve().parent / 'results' / 'q1b_convergence'
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
@@ -172,8 +176,8 @@ plt.rcParams.update({
 })
 
 def save(fig, stub):
-    fig.savefig(f"{stub}.svg", bbox_inches="tight")
-    fig.savefig(f"{stub}.pdf", bbox_inches="tight")
+    fig.savefig(OUT_DIR / f"{stub}.svg", bbox_inches="tight")
+    fig.savefig(OUT_DIR / f"{stub}.pdf", bbox_inches="tight")
 
 # ----------------------------------------------------------------------------
 # Figure A -- 4-panel scatter, sign + rank agreement
@@ -636,9 +640,9 @@ def build_table_q1b():
     ]
     tex = "\n".join(lines)
 
-    with open("table_q1b_convergence.tex", "w") as f:
+    with open(OUT_DIR / "table_q1b_convergence.tex", "w") as f:
         f.write(tex)
-    l3_per_rat.to_csv("table_q1b_layer3_per_rat.csv", index=False)
+    l3_per_rat.to_csv(OUT_DIR / "table_q1b_layer3_per_rat.csv", index=False)
     print("\nLaTeX table written to table_q1b_convergence.tex "
           "(per-rat geometry detail in table_q1b_layer3_per_rat.csv)")
     return tex

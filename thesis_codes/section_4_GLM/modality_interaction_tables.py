@@ -46,6 +46,10 @@ Outputs:
 """
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+OUT_DIR = Path(__file__).resolve().parent / 'results' / 'modality_interaction_tables'
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 from table_utils import Cell, Table, stars_for_q, latex_num, latex_est_ci, table_to_latex, table_to_latex_longtable
 from stats_helper import holm_correction, boot_p_value, compute_global_int_digits
@@ -162,7 +166,7 @@ def build_table1(gating_rows):
     t = Table(header_rows=header_rows, body_rows=body_rows, n_cols=5,
               caption="Within-rat likelihood-ratio gating for the interaction-mode GLM.",
               label="tab:lr_gating", note=note)
-    with open("table1_lr_gating.tex", "w") as f:
+    with open(OUT_DIR / "table1_lr_gating.tex", "w") as f:
         f.write(table_to_latex(t, fit_to_width=False))
 
     out_rows = []
@@ -175,7 +179,7 @@ def build_table1(gating_rows):
     out = pd.DataFrame(out_rows, columns=[
         "rat_id", "success_p", "success_reject", "failure_p", "failure_reject",
         "reward_p", "reward_reject", "prev_stim_p", "prev_stim_reject"])
-    out.to_csv("table1_lr_gating_data.csv", index=False)
+    out.to_csv(OUT_DIR / "table1_lr_gating_data.csv", index=False)
     print("Wrote table1_lr_gating.tex and table1_lr_gating_data.csv")
     return out.set_index("rat_id")
 
@@ -245,7 +249,7 @@ def build_table3(gated_cells):
               caption="Pairwise modality contrasts (V-T, VT-T, VT-V) for the log-odds history "
                       "coefficients, restricted to rat x block cells that passed the Table 1 gate.",
               label="tab:q3_contrasts", note=note)
-    with open("table3_contrasts.tex", "w") as f:
+    with open(OUT_DIR / "table3_contrasts.tex", "w") as f:
         f.write(table_to_latex(t, fit_to_width=True))
 
     long_rows = []
@@ -253,7 +257,7 @@ def build_table3(gated_cells):
         for rat, block, point_ests, adj_p, reject in rows_out:
             long_rows.append((rat, block, pair, point_ests[i], adj_p[i], bool(reject[i])))
     out = pd.DataFrame(long_rows, columns=["rat_id", "block", "contrast_pair", "value", "p_holm", "resolved"])
-    out.to_csv("table3_contrasts_data.csv", index=False)
+    out.to_csv(OUT_DIR / "table3_contrasts_data.csv", index=False)
     print("Wrote table3_contrasts.tex and table3_contrasts_data.csv")
 
 
@@ -345,7 +349,7 @@ def build_table2(gating_table1_df):
         t = Table(header_rows=header_rows, body_rows=body_rows, n_cols=2 + len(coeffs),
                   caption=f"Log-odds coefficients by sensory modality, unpenalized fit ({label_suffix}).",
                   label=f"tab:{out_stub}", note=note)
-        with open(f"{out_stub}.tex", "w") as f:
+        with open(OUT_DIR / f"{out_stub}.tex", "w") as f:
             f.write(table_to_latex_longtable(t))
         print(f"Wrote {out_stub}.tex ({len(RATS)} rats x {len(modalities)} modalities x {len(coeffs)} coeffs)")
 
@@ -360,7 +364,7 @@ def build_table2(gating_table1_df):
                 gated = gate_col[c] is not None and bool(gating_table1_df.loc[rat, gate_col[c]])
                 rows.append((rat, mod, c, sub.loc[c, "value"], sub.loc[c, "ci_low"], sub.loc[c, "ci_high"], gated))
     out = pd.DataFrame(rows, columns=["rat_id", "modality", "coefficient", "value", "ci_low", "ci_high", "lr_gated"])
-    out.to_csv("table2_modality_coeffs_data.csv", index=False)
+    out.to_csv(OUT_DIR / "table2_modality_coeffs_data.csv", index=False)
     print("Wrote table2_modality_coeffs_data.csv")
 
 
